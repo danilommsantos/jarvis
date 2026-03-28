@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Processo, Advogado, Parte, OrgaoJulgador, Classe, Assunto
+from .models import Responsavel, Processo, Advogado, Parte, OrgaoJulgador, Classe, Assunto
 
 @admin.register(Processo)
 class ProcessoAdmin(admin.ModelAdmin):
@@ -13,3 +13,4 @@ admin.site.register(Parte)
 admin.site.register(OrgaoJulgador)
 admin.site.register(Classe)
 admin.site.register(Assunto)
+admin.site.register(Responsavel)

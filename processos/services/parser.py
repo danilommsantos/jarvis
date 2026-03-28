@@ -1,11 +1,15 @@
 import pandas as pd
 import re
+from django.contrib.auth.models import User
+from django.utils.text import slugify
+from ..models import Responsavel
 
 def limpar_data_excel(data_valor):
     if pd.isna(data_valor) or str(data_valor).lower() == 'nan':
         return None
     # Converte para string e pega apenas a parte da data (AAAA-MM-DD)
     return str(data_valor).split(' ')[0]
+
 
 def separar_itens_celula(texto):
     """O algoritmo de separação que discutimos (cada linha é um item)"""
@@ -15,6 +19,7 @@ def separar_itens_celula(texto):
     itens = [i.strip() for i in str(texto).split('\n') if i.strip()]
     return list(dict.fromkeys(itens))
 
+
 def extrair_autor_obs(texto_obs):
     """Sua regra: Por 'NOME'."""
     if not texto_obs or pd.isna(texto_obs):
@@ -23,3 +28,48 @@ def extrair_autor_obs(texto_obs):
     if match:
         return match.group(1).strip(), match.group(2).strip()
     return None, str(texto_obs)
+
+
+from django.contrib.auth.models import User
+from ..models import Responsavel
+
+def obter_ou_criar_responsavel(nome_bruto):
+    """
+    Exemplo: 'DANILO MULLER MARTINS SANTOS'
+    -> User(username='danilo.santos', first_name='danilo', last_name='santos')
+    -> Responsavel(nome_completo='DANILO MULLER MARTINS SANTOS')
+    """
+    if not nome_bruto or str(nome_bruto).lower() == 'nan':
+        return None
+
+    nome_original = str(nome_bruto).strip()
+    partes = nome_original.split()
+    
+    # Lógica de nomes em minúsculas
+    primeiro_nome = partes[0].lower()
+    ultimo_nome = partes[-1].lower() if len(partes) > 1 else ""
+    
+    # Gerar username: nome.sobrenome
+    username_gerado = f"{primeiro_nome}.{ultimo_nome}" if ultimo_nome else primeiro_nome
+
+    # 1. Busca ou cria o User padrão do Django
+    user, created = User.objects.get_or_create(
+        username=username_gerado,
+        defaults={
+            'first_name': primeiro_nome,
+            'last_name': ultimo_nome,
+        }
+    )
+
+    # 2. Busca ou cria o modelo Responsavel vinculado ao User
+    responsavel, r_created = Responsavel.objects.get_or_create(
+        user=user,
+        defaults={'nome_completo': nome_original}
+    )
+
+    # Se o nome completo na planilha mudou, atualizamos o registro
+    if not r_created and responsavel.nome_completo != nome_original:
+        responsavel.nome_completo = nome_original
+        responsavel.save()
+
+    return responsavel
