@@ -1,0 +1,14 @@
+.diagramacao > p {
+    text-indent: 1cm;
+    text-align: justify;
+    hyphens: auto;
+    margin-bottom: 0;
+}
+
+.diagramacao > blockquote > p {
+    text-indent: 1cm;
+    margin-left: 2cm;
+    text-align: justify;
+    hyphens: auto;
+    margin-bottom: 0;
+}
