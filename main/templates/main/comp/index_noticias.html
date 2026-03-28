@@ -1,0 +1,150 @@
+<!-- @format -->
+
+<!-- Notícias -->
+<div class="col-12 col-xl-12 col-xxl-12 mb-4">
+    <div class="card h-100 mb-4">
+        <div
+            class="card-header hover-actions-trigger d-flex justify-content-center align-items-end position-relative mb-0 mb-xxl-0"
+            style="min-height: 214px">
+            <div
+                class="bg-holder rounded-top"
+                style="
+                    background-image: url(https://source.unsplash.com/random/1200×200/?abstract,art);
+                "></div>
+        </div>
+        <div class="card-body justify-content-center">
+            <div class="card-title mb-4">
+                <h3 class="text-body-emphasis text-center mt-0">
+                    Dados do Acervo
+                </h3>
+            </div>
+            <div
+                id="graph1"
+                class="echart-line-chart-example"
+                style="min-height: 500px"></div>
+            <script type="text/javascript">
+                // Initialize the echarts instance based on the prepared dom
+                var myChart1 = echarts.init(document.getElementById("graph1"));
+
+                // Specify the configuration items and data for the chart
+                var option1 = {
+                    title: {
+                        text: "Distribuição por Fase",
+                        subtext: 'Acervo completo',
+                        left: "center",
+                    },
+                    tooltip: {
+                        trigger: "item",
+                    },
+                    legend: {
+                        orient: "vertical",
+                        left: "left",
+                    },
+                    dataset: [
+                        {
+                            source: [
+                                {% for fase in distribuicao_por_fase %}
+                                    { value: {{ fase.total }}, name: '{{ fase.fase_atual }}: {{ fase.total }}' },
+                                {% endfor %}
+                            ],
+                        },
+                    ],
+                    series: [
+                        {
+                            type: "pie",
+                            radius: "50%",
+                        },
+                        {
+                            type: "pie",
+                            radius: "50%",
+                            label: {
+                                position: "inside",
+                                formatter: "{d}%",
+                                color: "black",
+                                fontSize: 18,
+                            },
+                            percentPrecision: 0,
+                            emphasis: {
+                                label: { show: true },
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: "rgba(0, 0, 0, 0.5)",
+                                },
+                            },
+                        },
+                    ],
+                };
+
+                // Display the chart using the configuration items and data just specified.
+                myChart1.setOption(option1);
+            </script>
+            <div
+                id="graph2"
+                class="echart-line-chart-example"
+                style="min-height: 500px"></div>
+            <script type="text/javascript">
+                // Initialize the echarts instance based on the prepared dom
+                var myChart2 = echarts.init(document.getElementById("graph2"));
+
+                // Specify the configuration items and data for the chart
+                var option2 = {
+                    title: {
+                        text: "Distribuição por Fase - Triados",
+                        subtext: 'Processo triados por Augusto e Danilo Guedes',
+                        left: "center",
+                    },
+                    tooltip: {
+                        trigger: "item",
+                    },
+                    legend: {
+                        orient: "vertical",
+                        left: "left",
+                    },
+                    dataset: [
+                        {
+                            source: [
+                            {% for fase in distribuicao_triados_por_fase %}
+                                { value: {{ fase.total }}, name: "{{ fase.fase_atual }}: {{ fase.total }}" },                            
+                            {% endfor %}
+                            ],
+                        },
+                    ],
+                    series: [
+                        {
+                            type: "pie",
+                            radius: "50%",
+                        },
+                        {
+                            type: "pie",
+                            radius: "50%",
+                            label: {
+                                position: "inside",
+                                formatter: "{d}%",
+                                color: "black",
+                                fontSize: 18,
+                            },
+                            percentPrecision: 0,
+                            emphasis: {
+                                label: { show: true },
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: "rgba(0, 0, 0, 0.5)",
+                                },
+                            },
+                        },
+                    ],
+                };
+
+                // Display the chart using the configuration items and data just specified.
+                myChart2.setOption(option2);
+            </script>
+        </div>
+    </div>
+    <div class="card h-100">
+        <div class="card-body">
+            
+        </div>
+    </div>
+</div>

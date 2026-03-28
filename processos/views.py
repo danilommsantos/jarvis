@@ -4,7 +4,7 @@ from .services.downloader import baixar_planilha_acervo
 from .services.importer import processar_atualizacao_acervo
 from .models import Processo
 
-def dashboard_processos(request):
+def dashboard(request):
     # Mostra os últimos 10 processos importados apenas para conferência
     recentes = Processo.objects.all().order_index('-id')[:10]
     return render(request, 'processos/dashboard.html', {'recentes': recentes})

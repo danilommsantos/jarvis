@@ -73,3 +73,23 @@ def obter_ou_criar_responsavel(nome_bruto):
         responsavel.save()
 
     return responsavel
+
+
+def formatar_numero_processo(texto_bruto):
+    """
+    Separa a fase do número e formata o NUP.
+    Ex: 'Ag-AIRR - 00000010920235220109' -> ('Ag-AIRR', '0000001-09.2023.5.22.0109')
+    """
+    if not texto_bruto or " - " not in str(texto_bruto):
+        return "INDETERMINADO", str(texto_bruto)
+    
+    try:
+        partes = str(texto_bruto).split(" - ", 1)
+        fase = partes[0].strip()
+        numero_sujo = partes[1].strip()
+        
+        # Usa a biblioteca nup que você já conhece
+        numero_formatado = nup(numero_sujo).formatado()
+        return fase, numero_formatado
+    except Exception:
+        return "ERRO_FORMATO", str(texto_bruto)

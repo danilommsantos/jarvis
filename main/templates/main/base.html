@@ -1,12 +1,13 @@
 <!-- @format -->
 
 {% load static %}
-<!DOCTYPE html>
+<!doctype html>
 <html
     data-navigation-type="default"
     data-navbar-horizontal-shape="default"
     lang="pt-BR"
-    dir="ltr">
+    dir="ltr"
+>
     {% include 'main/comp/index_head.html' %}
 
     <body class="nav-slim">
@@ -22,18 +23,39 @@
             <!-- ===============================================-->
             <!-- Barra horizontal -->
             <!-- ===============================================-->
-            {% include 'main\comp\index_nav_horizontal.html' %}
+            {% include 'main/comp/index_nav_horizontal.html' %}
 
             <!-- ===============================================-->
             <!-- Conteúdo -->
             <!-- ===============================================-->
             <div id="conteudo" class="content">
+                <!-- Começa o bloco de mensagens -->
+                {% if messages %}
+                <div class="row">
+                    <div class="col-12">
+                        {% for message in messages %}
+                        <div
+                            class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ message }}
+                            <button
+                                class="btn-close"
+                                type="button"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
                 <!-- Começa o bloco de conteúdo -->
                 {% block conteudo %}
                 <!-- Termina o bloco de conteúdo -->
                 {% endblock conteudo %}
-                <!-- Rodapé -->                
-            </div>            
+                <!-- Rodapé -->
+            </div>
         </main>
         <!-- ===============================================-->
         <!--    End of Main Content-->
@@ -42,6 +64,6 @@
         <!-- ===============================================-->
         <!--    JavaScripts -->
         <!-- ===============================================-->
-        {% include 'main\comp\index_scripts.html' %}
+        {% include 'main/comp/index_scripts.html' %}
     </body>
 </html>

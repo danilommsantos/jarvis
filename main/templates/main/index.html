@@ -1,0 +1,17 @@
+{% extends 'main/base.html' %} {% block conteudo %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card border border-300 shadow-none">
+            <div class="card-body">
+                <h2 class="mb-1">Bem-vindo, {{ user.first_name|title }}!</h2>
+                <p class="text-body-tertiary">
+                    O J.A.R.V.I.S. está monitorando {{ total_processos }}
+                    processos no seu acervo.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12"></div>
+</div>
+{% endblock conteudo %}

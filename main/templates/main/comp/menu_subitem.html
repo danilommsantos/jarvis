@@ -1,0 +1,9 @@
+<li class="nav-item">
+    <a class="nav-link {% if is_active %}active{% endif %}" 
+    href="{{ url }}" 
+    {% if externo %} target="_blank" rel="noopener noreferrer" {% endif %}>
+        <div class="d-flex align-items-center">
+            <span class="nav-link-text">{{ label }}</span>
+        </div>
+    </a>
+<li/>

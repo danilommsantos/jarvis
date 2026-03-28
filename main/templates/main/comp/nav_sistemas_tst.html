@@ -1,0 +1,29 @@
+{% load menu_tags %}
+
+<p class="navbar-vertical-label">Sistemas TST</p>
+
+{% render_menu_item label="Home" icon="home" target="index" %}
+{% render_menu_item label="Acervo Geral" icon="database" target="dashboard_processos" %}
+{% render_menu_item label="PJe" icon="filter" target="https://pje.tst.jus.br" %} 
+{% render_menu_item label="Configurações" icon="settings" target="admin:index" %}
+{% load menu_tags %}
+
+<p class="navbar-vertical-label">Gestão de Acervo</p>
+
+{% render_menu_item label="Dashboard" icon="pie-chart" target="index" %}
+
+<div class="nav-item-wrapper">
+    <a class="nav-link dropdown-indicator label-1" href="#nv-acervo" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-acervo">
+        <div class="d-flex align-items-center">
+            <div class="dropdown-indicator-icon"><span class="fas fa-caret-right"></span></div>
+            <span class="nav-link-icon"><span data-feather="briefcase"></span></span>
+            <span class="nav-link-text">Processos</span>
+        </div>
+    </a>
+    <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent" id="nv-acervo">
+            {% render_subitem label="Ver Todos" target="dashboard_processos" %}
+            {% render_subitem label="Sincronizar" target="executar_bot_acervo" %}            
+        </ul>
+    </div>
+</div>
