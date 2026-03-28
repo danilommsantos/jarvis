@@ -39,7 +39,7 @@ def obter_ou_criar_responsavel(nome_bruto):
     -> User(username='danilo.santos', first_name='danilo', last_name='santos')
     -> Responsavel(nome_completo='DANILO MULLER MARTINS SANTOS')
     """
-    if not nome_bruto or str(nome_bruto).lower() == 'nan':
+    if not nome_bruto or str(nome_bruto).lower() in ['nan', 'None', '']:
         return None
 
     nome_original = str(nome_bruto).strip()

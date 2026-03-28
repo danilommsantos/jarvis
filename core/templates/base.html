@@ -1,0 +1,47 @@
+<!-- @format -->
+
+{% load static %}
+<!DOCTYPE html>
+<html
+    data-navigation-type="default"
+    data-navbar-horizontal-shape="default"
+    lang="pt-BR"
+    dir="ltr">
+    {% include 'main/comp/index_head.html' %}
+
+    <body class="nav-slim">
+        <!-- ===============================================-->
+        <!--    Main Content-->
+        <!-- ===============================================-->
+        <main class="main" id="top">
+            <!-- ===============================================-->
+            <!-- Inclui barra de navegação vertiucal-->
+            <!-- ===============================================-->
+            {% include 'main/comp/index_nav_vertical.html' %}
+
+            <!-- ===============================================-->
+            <!-- Barra horizontal -->
+            <!-- ===============================================-->
+            {% include 'main\comp\index_nav_horizontal.html' %}
+
+            <!-- ===============================================-->
+            <!-- Conteúdo -->
+            <!-- ===============================================-->
+            <div id="conteudo" class="content">
+                <!-- Começa o bloco de conteúdo -->
+                {% block conteudo %}
+                <!-- Termina o bloco de conteúdo -->
+                {% endblock conteudo %}
+                <!-- Rodapé -->                
+            </div>            
+        </main>
+        <!-- ===============================================-->
+        <!--    End of Main Content-->
+        <!-- ===============================================-->
+
+        <!-- ===============================================-->
+        <!--    JavaScripts -->
+        <!-- ===============================================-->
+        {% include 'main\comp\index_scripts.html' %}
+    </body>
+</html>

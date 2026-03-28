@@ -1,0 +1,83 @@
+<!-- @format -->
+
+{% load static %}
+<nav
+    class="navbar navbar-top navbar-slim fixed-top navbar-expand"
+    id="topNavSlim">
+    <div class="collapse navbar-collapse justify-content-between">
+        <!-- ---- -->
+        <!-- Logo -->
+        <!-- ---- -->
+        <div class="navbar-logo">
+            <button
+                class="btn navbar-toggler navbar-toggler-humburger-icon hover-bg-transparent"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarVerticalCollapse"
+                aria-controls="navbarVerticalCollapse"
+                aria-expanded="false"
+                aria-label="Toggle Navigation">
+                <span class="navbar-toggle-icon"
+                    ><span class="toggle-line"></span
+                ></span>
+            </button>
+            <a class="navbar-brand navbar-brand" href="{% url 'index' %}"
+                >J.A.R.V.I.S.
+                <span class="text-body-highlight d-none d-sm-inline"
+                    >GMKA</span
+                ></a
+            >
+        </div>
+        <ul class="navbar-nav navbar-nav-icons flex-row">
+            <!-- ------------- -->
+            <!-- Controle Tema -->
+            <!-- ------------- -->
+            <li class="nav-item">
+                <div
+                    class="theme-control-toggle fa-ion-wait pe-2 theme-control-toggle-slim">
+                    <input
+                        class="form-check-input ms-0 theme-control-toggle-input"
+                        id="themeControlToggle"
+                        type="checkbox"
+                        data-theme-control="phoenixTheme"
+                        value="dark" />
+                    <label
+                        class="mb-0 theme-control-toggle-label theme-control-toggle-light"
+                        for="themeControlToggle"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="left"
+                        title="Switch theme"
+                        ><span
+                            class="icon me-1 d-none d-sm-block"
+                            data-feather="moon"></span
+                        ><span class="fs-9 fw-bold">Dark</span></label
+                    >
+                    <label
+                        class="mb-0 theme-control-toggle-label theme-control-toggle-dark"
+                        for="themeControlToggle"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="left"
+                        title="Switch theme"
+                        ><span
+                            class="icon me-1 d-none d-sm-block"
+                            data-feather="sun"></span
+                        ><span class="fs-9 fw-bold">Light</span></label
+                    >
+                </div>
+            </li>
+
+        </ul>
+    </div>
+</nav>
+<script>
+    var topNavSlim = document.querySelector("#topNavSlim");
+    var navbarVertical = document.querySelector(".navbar-vertical");
+
+    topNavSlim.style.display = "block";
+    navbarVertical.removeAttribute("style");
+    document.documentElement.setAttribute(
+        "data-navbar-horizontal-shape",
+        "slim"
+    );
+    topNavSlim.setAttribute("data-navbar-appearance", "darker");
+</script>

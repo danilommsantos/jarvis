@@ -1,0 +1,43 @@
+<!-- @format -->
+
+{% load static %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+    document.body.addEventListener('htmx:configRequest', (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    })
+</script>
+<script>
+    var navbarTopStyle = window.config.config.phoenixNavbarTopStyle;
+    var navbarTop = document.querySelector(".navbar-top");
+    if (navbarTopStyle === "darker") {
+        navbarTop.setAttribute("data-navbar-appearance", "darker");
+    }
+
+    var navbarVerticalStyle =
+        window.config.config.phoenixNavbarVerticalStyle;
+    var navbarVertical = document.querySelector(".navbar-vertical");
+    if (navbarVertical && navbarVerticalStyle === "darker") {
+        navbarVertical.setAttribute(
+            "data-navbar-appearance",
+            "darker"
+        );
+    }
+</script>
+<script src="{% static 'vendors/popper/popper.min.js' %}"></script>
+<script src="{% static 'vendors/bootstrap/bootstrap.min.js' %}"></script>
+<script src="{% static 'vendors/anchorjs/anchor.min.js' %}"></script>
+<script src="{% static 'vendors/is/is.min.js' %}"></script>
+<script src="{% static 'vendors/fontawesome/all.min.js' %}"></script>
+<script src="{% static 'vendors/lodash/lodash.min.js' %}"></script>
+<script src="{% static 'vendors/list.js/list.min.js' %}"></script>
+<script src="{% static 'vendors/feather-icons/feather.min.js' %}"></script>
+<script src="{% static 'vendors/dayjs/dayjs.min.js' %}"></script>
+<script src="{% static 'assets/js/phoenix.js' %}"></script>
+<script src="{% static 'vendors/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'vendors/leaflet.markercluster/leaflet.markercluster.js' %}"></script>
+<script src="{% static 'vendors/leaflet.tilelayer.colorfilter/leaflet-tilelayer-colorfilter.min.js' %}"></script>
+<script src="{% static 'assets/js/ecommerce-dashboard.js' %}"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=window.scroll"></script>
+<!-- <script src="{% static 'assets/js/flatpickr.js' %}"></script> -->
+
