@@ -2,8 +2,11 @@ import os
 import time
 import pyautogui
 import pygetwindow as gw
+import pyperclip
 from PIL import ImageGrab
 from django.conf import settings
+
+TABS_ATE_BOTAO_BUSCAR = 8
 
 def localizar_na_tela(caminho_imagem):
     """
@@ -14,6 +17,7 @@ def localizar_na_tela(caminho_imagem):
         tela = ImageGrab.grab(all_screens=True)
         return pyautogui.locate(caminho_imagem, tela, confidence=0.8, grayscale=True)
     except Exception as e:
+        print(f"Erro ao localizar imagem '{caminho_imagem}': {e}")
         return None
 
 def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao=None, acao_extra=None, timeout=1, max_tentativas=5):
@@ -30,8 +34,7 @@ def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao
         start_busca = time.time()
         clicou = False
         
-        # Tenta achar o botão de clique por até 5 segundos
-        while time.time() - start_busca < 5:
+        while time.time() - start_busca < timeout:
             pos_alvo = localizar_na_tela(img_alvo)
             if pos_alvo:
                 centro_x, centro_y = pyautogui.center(pos_alvo)
@@ -102,17 +105,19 @@ def abre_voto_ge(numero_processo):
         img_editar = os.path.join(base_path, "editar_voto_btn.png")
         img_word = os.path.join(base_path, "abrir_word_btn.png")
 
-        if not os.path.exists(img_consulta):
-            print(f"ERRO: Imagem não encontrada no caminho -> {img_consulta}")
-            return False
+        for img in [img_consulta, img_editar, img_word]:
+            if not os.path.exists(img):
+                print(f"ERRO: Imagem não encontrada no caminho -> {img}")
+                return False
 
         # --- AÇÕES DA AUTOMAÇÃO ---
-        
-        # Função para ser injetada e chamada logo após clicar em "Consulta"
+
+        pyperclip.copy(numero_processo)
+
         def acao_colar_e_buscar():
             pyautogui.hotkey('ctrl', 'v')
-            for _ in range(8):
-                pyautogui.press('tab')    
+            for _ in range(TABS_ATE_BOTAO_BUSCAR):
+                pyautogui.press('tab')
             pyautogui.press('enter')
 
         # 1. Clicar em Consulta -> Colar Número -> Confirmar que "Editar Voto" apareceu
@@ -144,16 +149,27 @@ def abre_voto_ge(numero_processo):
         if not sucesso_editar:
             return False
 
-        # 3. Clicar em Abrir Word -> Não tem confirmação (O Word vai abrir sozinho)
-        # Colocamos apenas 3 tentativas porque não depende da internet carregar, só do clique
-        clicar_com_retry(
+        # 3. Clicar em Abrir Word -> Confirmar via pygetwindow que o Word abriu
+        sucesso_word_click = clicar_com_retry(
             img_alvo=img_word,
             desc_alvo="Abrir Word",
             timeout=5,
             max_tentativas=3
         )
-        
-        return True
+
+        if not sucesso_word_click:
+            return False
+
+        print(f" > Aguardando Word abrir para o processo {numero_processo}...")
+        start_word = time.time()
+        while time.time() - start_word < 30:
+            if any(numero_processo in w.title for w in gw.getWindowsWithTitle('Word')):
+                print(f" V Word aberto com sucesso para o processo {numero_processo}.")
+                return True
+            time.sleep(1)
+
+        print(f"!!! Timeout: Word não abriu para o processo {numero_processo}.")
+        return False
 
     except Exception as e:
         print(f"Erro inesperado na automação: {e}")
