@@ -20,5 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')), # Main cuida da raiz
+    path('mppf/', include('mppf.urls')),
     path('processos/', include('processos.urls')),
+    path('pautas/', include('pautas.urls')),
 ]

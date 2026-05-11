@@ -3,6 +3,7 @@ import re
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from ..models import Responsavel
+from nup_poder_judiciario import NumeroUnicoProcesso as nup
 
 def limpar_data_excel(data_valor):
     if pd.isna(data_valor) or str(data_valor).lower() == 'nan':
@@ -76,6 +77,7 @@ def obter_ou_criar_responsavel(nome_bruto):
 
 
 def formatar_numero_processo(texto_bruto):
+    print(f"formatar {texto_bruto}")
     """
     Separa a fase do número e formata o NUP.
     Ex: 'Ag-AIRR - 00000010920235220109' -> ('Ag-AIRR', '0000001-09.2023.5.22.0109')
@@ -84,7 +86,7 @@ def formatar_numero_processo(texto_bruto):
         return "INDETERMINADO", str(texto_bruto)
     
     try:
-        partes = str(texto_bruto).split(" - ", 1)
+        partes = str(texto_bruto).split(" - ")
         fase = partes[0].strip()
         numero_sujo = partes[1].strip()
         
@@ -92,4 +94,6 @@ def formatar_numero_processo(texto_bruto):
         numero_formatado = nup(numero_sujo).formatado()
         return fase, numero_formatado
     except Exception:
+        
+        print(f"DEBUG J.A.R.V.I.S. -> Falha ao formatar: '{texto_bruto}' | Erro: {e}")
         return "ERRO_FORMATO", str(texto_bruto)

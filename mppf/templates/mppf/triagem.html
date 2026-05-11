@@ -1,0 +1,660 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block conteudo %}
+<div class="mt-3 mx-lg-n4 mt-n2">
+    
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                    
+                    <h2 class="text-body-emphasis fw-bolder mb-0 fs-4">
+                        {{ processo }}
+                    </h2>
+                    
+                    <div class="btn-reveal-trigger d-flex flex-wrap gap-2 align-items-center">
+                        {% if triagem.foi_triado %}
+                            <span class="badge badge-phoenix badge-phoenix-success fs-7">Triado</span>
+                        {% else %}
+                            <span class="badge badge-phoenix badge-phoenix-primary fs-7">Triar</span>
+                        {% endif %}
+
+                        <span class="badge badge-phoenix badge-phoenix-info fs-7" title="Quantidade de recursos calculada.">
+                            QTC {{ triagem.quantidade_de_recursos_calculada }}
+                        </span>
+                        
+                        {% if triagem.foi_conferida_a_quantidade_de_recursos %}
+                            <span class="badge badge-phoenix fs-7 badge-phoenix-success" title="A quantidade de recursos foi conferida.">
+                                QTA {{ triagem.quantidade_de_recursos|default:"1" }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-phoenix fs-7 badge-phoenix-danger" title="A quantidade de recursos não foi conferida.">
+                                QTA {{ triagem.quantidade_de_recursos|default:"1" }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        
+        <div class="col-12 col-lg-auto d-flex justify-content-center" style="height: 84vh; width: 65ch; max-width: 100%;">
+            <div class="card d-flex flex-column shadow-sm w-100">
+                <div class="card-header d-flex justify-content-between align-items-center py-2 mb-0 border-bottom">
+                    <h4 class="mb-0 fs-6">
+                        DA
+                        <span class="badge badge-phoenix badge-phoenix-info ms-2" title="Páginas Estimadas">
+                            {{ triagem.paginas|floatformat:1 }} 
+                        </span>
+                        {% if triagem.foi_editada_DA %}
+                            <span class="badge badge-phoenix badge-phoenix-success ms-2">Editada</span>
+                        {% else %}
+                            <span class="badge badge-phoenix badge-phoenix-danger ms-2">Não editada</span>
+                        {% endif %}
+                    </h4>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="copiarDA()" title="Copiar texto original">
+                            <span class="fa-solid far fas far fa-copy me-0"></span> Copiar
+                        </button>
+                        
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarDA">
+                            <span>Editar</span>
+                            <span class="fa-solid far fas far fa-edit me-0"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mensagem" style="display: none;" class="alert alert-success m-2 p-2 fs-9"></div>
+
+                <div class="card-body py-2 overflow-auto mx-auto w-100"
+                     style="text-align: justify; flex: 1 1 auto;">
+                    {% for linha in linhas_formatadas %}
+                        <p class="text-body-highlight fs-7 mb-0" style="text-indent: 2.5cm;">
+                            {{ linha|safe }}
+                        </p>
+                    {% endfor %}
+                </div>
+                
+                <textarea id="textoBrutoCopiar" style="display: none;">{{ texto_raw }}</textarea>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg d-flex flex-column gap-3">
+            <div class="card shadow-sm">
+                <div class="card-body py-2 rounded">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-12">
+                            <div>
+                                <h2 class="fs-6 mb-1 text-uppercase fw-bold text-center">
+                                    Produtividade
+                                </h2>
+                                <h6 class="mb-1 text-uppercase fw-bold text-center">
+                                    Geral
+                                </h6>
+
+                                <p class="mb-1 text-body-tertiary fs-9 text-center ">
+                                    Foram triados {{ feitos|default:"0" }} ({{ percentual_concluido }}%) de {{ total|default:"0" }}, faltam {{ faltam|default:"0" }}.
+                                </p>
+                            </div>
+                            <div class="progress mt-1 mb-1" style="height: 6px">
+                                <div class="progress-bar rounded-3" role="progressbar" style="width: {{ percentual_concluido|floatformat:0 }}%"></div>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-body-tertiary fs-9 text-center ">
+                                    Aproveitamento {{ aproveitados|default:"0" }} ({{ percentual_aproveitados }}%) de {{ feitos|default:"0" }}.
+                                </p>
+                            </div>
+                            <div class="progress mb-1 mt-1" style="height: 6px">
+                                <div class="progress-bar rounded-3" role="progressbar" style="width: {{ percentual_aproveitados|floatformat:0 }}%"></div>
+                            </div>
+                            <div>
+                                <h6 class="mb-1 text-uppercase fw-bold text-center">
+                                    Acervo
+                                </h6>
+                                <p class="mb-1 text-body-tertiary fs-9 text-center ">
+                                    Foram triados {{ feitos_acervo|default:"0" }} ({{ percentual_concluido_acervo }}%) de {{ total_acervo|default:"0" }}, faltam {{ faltam_acervo|default:"0" }}.
+                                </p>
+                            </div>
+                            <div class="progress mt-1 mb-1" style="height: 6px">
+                                <div class="progress-bar rounded-3" role="progressbar" style="width: {{ percentual_concluido_acervo|floatformat:0 }}%"></div>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-body-tertiary fs-9 text-center ">
+                                    Aproveitamento {{ aproveitados_acervo|default:"0" }} ({{ percentual_aproveitados_acervo }}%) de {{ feitos_acervo|default:"0" }}.
+                                </p>
+                            </div>
+                            <div class="progress mt-1" style="height: 6px">
+                                <div class="progress-bar rounded-3" role="progressbar" style="width: {{ percentual_aproveitados_acervo|floatformat:0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm d-flex flex-column">
+                <div class="card-header py-2 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-6"><i class="fas fa-tags me-2 text-primary"></i>Matérias</h5>
+                    <div class="d-flex flex-row align-items-center gap-1">
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_name" value="atualizar_materias">
+                            <button type="submit" class="btn btn-link p-0 text-primary fs-9 shadow-none text-decoration-none" title="Reexecutar varredura automática">
+                                <i class="fas fa-sync-alt me-1"></i>
+                            </button>
+                        </form>
+                        <button 
+                            class="btn btn-primary btn-sm shadow-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#modalAdicionarMateria" 
+                            title="Adicionar nova matéria manualmente">
+                            <i class="fas fa-plus me-1"></i> Adicionar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-body py-3 overflow-auto" style="flex: 1 1 auto;">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for tm in triagem.triagemmateria_set.all %}
+                            {% with mat=tm.materia %} <span 
+                                class="badge badge-phoenix badge-phoenix-{% if mat.efeito == 'IMPEDE' %}danger{% elif mat.efeito == 'IN40' %}warning{% else %}info{% endif %} p-2 fs-8 d-flex align-items-center text-wrap"
+                                title="Descrição: {{ mat.descricao }} Data de referência: {{ mat.data_referencia|date:'d/m/Y' }}">
+                                
+                                {% if tm.origem == 'SISTEMA' %}
+                                    <i class="fas fa-robot me-2 fs-9 opacity-75" title="Identificado automaticamente pelo robô"></i>
+                                {% else %}
+                                    <i class="fas fa-user-check me-2 fs-9 opacity-75" title="Validado/Adicionado manualmente por si"></i>
+                                {% endif %}
+                                
+                                <span>{{ mat.nome }}</span>
+                                
+                                <div class="d-flex align-items-center border-start border-secondary border-opacity-50 ps-2 ms-2 gap-2">
+                                    
+                                    <button type="button" 
+                                            class="btn btn-link p-0 m-0 border-0 fs-8 opacity-75" 
+                                            title="Ver detalhes da matéria"
+                                            data-bs-toggle="modal" data-bs-target="#modalDetalhesMateria"
+                                            onclick="prepararModalDetalhes('{{ mat.nome|escapejs }}', '{{ mat.descricao|default_if_none:''|escapejs }}', '{{ mat.data_referencia|date:'d.m.Y' }}', '{% for exp in mat.expressoes.all %}{{ exp.texto|escapejs }}{% if not forloop.last %}#{% endif %}{% endfor %}')">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+
+                                    <button type="button" 
+                                            class="btn btn-link p-0 m-0 border-0 {% if mat.efeito == 'IN40' %}text-warning{% else %}text-primary{% endif %} fs-8 opacity-75" 
+                                            title="Adicionar expressão a esta matéria"
+                                            data-bs-toggle="modal" data-bs-target="#modalAdicionarExpressao"
+                                            onclick="prepararModalExpressao('{{ mat.id }}', '{{ mat.nome|escapejs }}', '{% for exp in mat.expressoes.all %}{{ exp.texto|escapejs }}{% if not forloop.last %}#{% endif %}{% endfor %}')"
+                                            onmouseover="this.classList.remove('opacity-75');"
+                                            onmouseout="this.classList.add('opacity-75');">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+
+                                    <form method="POST" style="margin: 0; padding: 0; display: flex;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_name" value="remover_materia">
+                                        <input type="hidden" name="materia_id" value="{{ mat.id }}">
+                                        <button type="submit" 
+                                                class="btn btn-link p-0 m-0 border-0 {% if mat.efeito == 'IN40' %}text-warning{% else %}text-danger{% endif %} fs-8 opacity-75" 
+                                                title="Remover {{ mat.nome }} do processo"
+                                                onmouseover="this.classList.remove('opacity-75');"
+                                                onmouseout="this.classList.add('opacity-75');">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </span>
+                            {% endwith %}
+                        {% empty %}
+                            <div class="w-100 text-center mt-2">
+                                <p class="text-muted mb-0 fs-9 fst-italic">Nenhuma matéria vinculada a este processo.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg d-flex flex-column gap-3">
+            <div class="card shadow-sm">
+                <div class="card-header py-2 border-bottom">
+                    <h5 class="mb-0 fs-6 text-center"><i class="fas fa-table me-2 text-primary"></i>Dados do Processo</h5>
+                </div>
+                <div class="card-body py-2">
+                    <table class="table table-sm border-bottom mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="border-0">
+                                    <div class="fw-bold text-secondary mb-1">Partes Autoras:</div>
+                                    <div class="d-flex fw-bold flex-column align-items-start">
+                                        {% for parte in processo.partes_autoras.all %}
+                                            <span class="badge badge-phoenix badge-phoenix-primary text-wrap">
+                                                {{ parte|upper|default:"Não informado" }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted fs-9">Não informado</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td class="border-0">
+                                    <div class="fw-bold text-secondary mb-1">Partes Rés:</div>
+                                    <div class="d-flex fw-bold flex-column align-items-start">
+                                        {% for parte in processo.partes_res.all %}
+                                            <span class="badge badge-phoenix badge-phoenix-primary text-wrap">
+                                                {{ parte|upper|default:"Não informado" }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted fs-9">Não informado</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>                                
+                        </tbody>
+                    </table>
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="border-0">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="fw-bold text-secondary">Peças:</div>
+                                        <div class="d-flex flex-row align-items-center gap-1">
+                                            <a target="_blank" href="https://bemtevi.tst.jus.br/report/processo/{{ processo.numero }}">
+                                                <span class="badge badge-phoenix badge-phoenix-primary">
+                                                    BTV1
+                                                </span>
+                                            </a>                                       
+                                            <a target="_blank" href="http://bemtevi-reports.ml-prd.rede.tst/report/processo/{{ processo.numero }}">
+                                                <span class="badge badge-phoenix badge-phoenix-primary">
+                                                    BTV2
+                                                </span>
+                                            </a>                                       
+                                            <form method="POST" style="margin: 0;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_name" value="atualizar_pecas">
+                                                <button type="submit" class="btn btn-link p-0 text-primary fs-9 shadow-none text-decoration-none" title="Sincronizar peças do tribunal">
+                                                    <i class="fas fa-sync-alt me-1"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex fw-bold flex-column align-items-start">
+                                        {% for da in processo.pecas.all %}
+                                            {% if da.tipo_peca.sigla == "DA" %}
+                                                <div class="d-flex justify-content-between align-items-center mb-1  w-100">
+                                                    <span class="badge badge-phoenix badge-phoenix-primary">
+                                                        {{ da.tipo_peca.sigla|upper|default:"Não informado" }}
+                                                    </span>
+                                                    <span class="badge badge-phoenix badge-phoenix-primary">
+                                                        {{ da.data_publicacao|date:"d.m.Y" }}
+                                                    </span>
+                                                    <a target="_blank" href="{{ da.download_url }}/html">
+                                                        <span class="badge badge-phoenix badge-phoenix-primary">
+                                                            <i class="fas fa-link me-1"></i>
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            {% endif %}   
+                                        {% empty %}
+                                            <span class="text-muted fs-9">Nenhuma disponível</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>                    
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header py-2 border-bottom">
+                    <div class="d-grid gap-2 mb-3 border-bottom pb-3">
+                        <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-file-pdf me-1"></i> Abrir o PDF do Processo
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#modalCriarMateriaNoBanco">
+                            <i class="fas fa-plus-square me-1"></i> Criar Nova Matéria
+                        </button>
+                    </div>
+                    <form method="POST" onsubmit="return confirmarQuantidade(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_name" value="decisao_final">                        
+                        <div class="d-grid gap-2">
+                            {% for solucao in todas_solucoes %}                                
+                                {% if solucao in solucoes_permitidas %}                                    
+                                    <button type="submit" name="acao" value="{{ solucao.slug }}" 
+                                        class="btn btn-{% if triagem.resultado == solucao %}{{ solucao.cor_classe }}{% else %}outline-{{ solucao.cor_classe }}{% endif %} fw-bold py-2 shadow-sm">
+                                        {{ solucao.nome }}
+                                    </button>                                
+                                {% else %}                                    
+                                    <button type="button" class="btn btn-outline-secondary fw-bold py-2 shadow-sm opacity-50" disabled title="Bloqueado pelas matérias identificadas neste processo">
+                                        <i class="fas fa-lock me-1"></i> {{ solucao.nome }}
+                                    </button>                                
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarDA" tabindex="-1" aria-labelledby="modalEditarDALabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarDALabel">Editar Despacho e Recursos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_name" value="editar_DA">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Texto do Despacho de Admissibilidade</label>
+                        <textarea name="texto_da" class="form-control" rows="18" style="font-family: monospace; font-size: 0.9rem;">{{ triagem.texto_despacho_admissibilidade }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3 ms-auto text-end" style="width: 165px;">
+                        <label class="form-label fw-bold">Quantidade de Recursos</label>
+                        <input type="number" name="quantidade_de_recursos" class="form-control" value="{{ triagem.quantidade_de_recursos|default:"1" }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar Edição do Texto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAdicionarMateria" tabindex="-1" aria-labelledby="modalAdicionarMateriaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header ">
+                <h5 class="modal-title" id="modalAdicionarMateriaLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Adicionar Matéria ao Processo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-floating mb-4">
+                    <input type="text" class="form-control border-primary" id="filtroMaterias" placeholder="Digite para buscar...">
+                    <label for="filtroMaterias"><i class="fas fa-search me-1"></i> Buscar matéria pelo nome...</label>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2" id="listaMateriasDisponiveis">
+                    {% for mat in materias_disponiveis %}
+                        
+                        <form method="POST" class="materia-item">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_name" value="adicionar_materia">
+                            <input type="hidden" name="materia_id" value="{{ mat.id }}">
+                            
+                            <button type="submit" 
+                                class="btn btn-sm shadow-sm fw-bold border-0 text-start w-100 text-wrap btn-{{ mat.solucoes_compativeis.all.first.cor_classe }}">
+                                {{ mat.nome }}
+                            </button>
+                        </form>
+
+                    {% empty %}
+                        <div class="w-100 text-center mt-4">
+                            <p class="text-muted fst-italic">Todas as matérias ativas já foram adicionadas a este processo.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAdicionarExpressao" tabindex="-1" aria-labelledby="modalAdicionarExpressaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAdicionarExpressaoLabel">
+                    <i class="fas fa-quote-right me-2 text-primary"></i>Nova Expressão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_name" value="adicionar_expressao">
+                    <input type="hidden" name="materia_id" id="expressao_materia_id" value="">
+                    
+                    <p class="mb-3 text-body-tertiary fs-9">
+                        Adicionando padrão de busca à matéria: <br>
+                        <strong id="expressao_materia_nome" class="fs-8 text-body-emphasis"></strong>
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="fw-bold fs-9 text-secondary text-uppercase mb-1">Já Cadastradas</label>
+                        <div class="border rounded p-2">
+                            <ul id="lista_expressoes_existentes" class="list-unstyled mb-0">
+                                </ul>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Texto ou Fragmento (Nova Expressão)</label>
+                        <input type="text" name="nova_expressao" class="form-control" required placeholder="Ex: súmula 126, intempestivo, etc...">
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" name="usar_regex" id="usarRegexCheck">
+                        <label class="form-check-label" for="usarRegexCheck">
+                            É Expressão Regular (Regex)?
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar Expressão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCriarMateriaNoBanco" tabindex="-1" aria-labelledby="modalCriarMateriaNoBancoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCriarMateriaNoBancoLabel">
+                    <i class="fas fa-database me-2 text-secondary"></i>Cadastrar Nova Matéria
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_name" value="criar_materia_no_banco">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome da Matéria</label>
+                        <input type="text" name="nome" class="form-control" required placeholder="Ex: Súmula 126 do TST">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Efeito Jurídico</label>
+                        <select name="efeito" class="form-select" required>
+                            <option value="NEUTRO" selected>Neutro (Apenas informativo)</option>
+                            <option value="IN40">IN40 (Exige aplicação da IN40)</option>
+                            <option value="IMPEDE">Impede (Bloqueia a confecção do MPPF)</option>
+                        </select>
+                        <div class="form-text fs-9 mt-1">Isso definirá se os botões de ação final serão bloqueados ou não.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Criar e Vincular
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalhesMateria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalhe_materia_nome"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="fw-bold fs-9 text-secondary text-uppercase">Descrição</label>
+                    <p id="detalhe_materia_descricao" class="fs-8 text-body-highlight mb-0"></p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="fw-bold fs-9 text-secondary text-uppercase">Data de Referência</label>
+                    <p id="detalhe_materia_data" class="fs-8 text-body-highlight mb-0"></p>
+                </div>
+
+                <hr class="my-3">
+
+                <label class="fw-bold fs-9 text-secondary text-uppercase mb-2">Expressões Cadastradas</label>
+                <ul id="detalhe_materia_expressoes" class="list-unstyled mb-0">
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copiarDA() {
+        const textoBruto = document.getElementById("textoBrutoCopiar").value;
+        
+        navigator.clipboard.writeText(textoBruto).then(() => {
+            const msg = document.getElementById("mensagem");
+            msg.style.display = "block";
+            msg.innerText = "Texto original copiado para a área de transferência!";
+
+            setTimeout(() => {
+                msg.style.display = "none";
+            }, 3000);
+        }).catch(err => {
+            console.error('Erro ao copiar o texto: ', err);
+            alert("Falha ao copiar o texto.");
+        });
+    }
+
+    const startTimeStr = "{{ ultimo_horario|default:'' }}";
+    const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
+    const tempoMedio = parseFloat("{{ tempo_medio_ms|default:0 }}");
+
+    const currentUrl = window.location.href;
+    const storageKey = "timer_state_" + btoa(currentUrl); 
+    let state = JSON.parse(localStorage.getItem(storageKey)) || { jaTocou15: false, jaTocou25: false };
+
+    function updateTimer() {
+        const elapsedTime = Date.now() - startTime.getTime();
+
+        const minutes = Math.floor((elapsedTime % 3600000) / 60000);
+        const seconds = Math.floor((elapsedTime % 60000) / 1000);
+        const milliseconds = elapsedTime % 1000;
+
+        const timerDisplay = document.getElementById("timer");
+        if (timerDisplay) {
+            timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+        }
+    }
+    
+    setInterval(updateTimer, 100);
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputFiltro = document.getElementById("filtroMaterias");
+        
+        if(inputFiltro) {
+            inputFiltro.addEventListener("keyup", function() {
+                let termoBusca = this.value.toLowerCase();
+                let itensMateria = document.querySelectorAll(".materia-item");
+                
+                itensMateria.forEach(function(item) {
+                    let textoBotao = item.textContent.toLowerCase();
+                    if (textoBotao.includes(termoBusca)) {
+                        item.style.display = "block";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+        }
+    });
+</script>
+<script>
+    function prepararModalExpressao(materiaId, materiaNome, expressoesStr) {
+        document.getElementById('expressao_materia_id').value = materiaId;
+        document.getElementById('expressao_materia_nome').innerText = materiaNome;
+
+        const lista = document.getElementById('lista_expressoes_existentes');
+        lista.innerHTML = "";
+
+        if (expressoesStr && expressoesStr.trim() !== "") {
+            const exps = expressoesStr.split('#');
+            exps.forEach(texto => {
+                const li = document.createElement('li');
+                li.className = "fs-9 mb-1 d-flex align-items-center text-body-tertiary";
+                li.innerHTML = `<i class="fas fa-search me-2 fs-10 opacity-50"></i> ${texto}`;
+                lista.appendChild(li);
+            });
+        } else {
+            lista.innerHTML = "<li class='text-muted fs-9 italic'>Nenhuma expressão cadastrada para esta matéria.</li>";
+        }
+    }
+    function prepararModalDetalhes(nome, descricao, data, expressoesStr) {
+        document.getElementById('detalhe_materia_nome').innerText = nome;
+        document.getElementById('detalhe_materia_descricao').innerText = descricao || "Nenhuma descrição cadastrada.";
+        document.getElementById('detalhe_materia_data').innerText = data || "Sem data informada.";
+
+        const lista = document.getElementById('detalhe_materia_expressoes');
+        lista.innerHTML = "";
+
+        if (expressoesStr) {
+            const exps = expressoesStr.split('#');
+            exps.forEach(texto => {
+                const li = document.createElement('li');
+                li.className = "fs-9 mb-1 d-flex align-items-center";
+                li.innerHTML = `<i class="fas fa-check-circle text-success me-2 fs-10"></i> ${texto}`;
+                lista.appendChild(li);
+            });
+        } else {
+            lista.innerHTML = "<li class='text-muted fs-9 italic'>Nenhuma expressão cadastrada para esta matéria.</li>";
+        }
+    }
+</script>
+<script>
+    function confirmarQuantidade(event) {
+        const qtdCalculada = parseInt("{{ triagem.quantidade_de_recursos_calculada|default:1 }}");
+        const qtdAnotada = parseInt("{{ triagem.quantidade_de_recursos|default:1 }}");
+
+        if (qtdCalculada !== qtdAnotada) {
+            const prosseguir = confirm(`ATENÇÃO!\n\nA Quantidade Calculada (QTC: ${qtdCalculada}) é diferente da Quantidade Anotada (QTA: ${qtdAnotada}).\n\nTem certeza que deseja aplicar a decisão sem editar a DA para corrigir essa divergência?`);
+            
+            if (!prosseguir) {
+                event.preventDefault();
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock conteudo %}

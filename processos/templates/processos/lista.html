@@ -1,0 +1,58 @@
+{% extends 'main/base.html' %}
+
+{% block conteudo %}
+<div class="mb-9">
+    <div class="row g-3 mb-4 align-items-center justify-content-between">
+        <div class="col-auto">
+            <h2 class="mb-0">Acervo Geral</h2>
+        </div>
+        <div class="col-auto">
+            <a class="btn btn-primary" href="{% url 'atualizar_acervo' %}">
+                <span class="fas fa-sync me-2"></span>Atualizar Acervo
+            </a>
+        </div>
+    </div>
+
+    <div id="tableExample" data-list='{"valueNames":["numero","fase","responsavel","data"],"page":100,"pagination":true}'>
+        <div class="search-box mb-3 w-25">
+            <form class="position-relative" data-bs-toggle="search" data-bs-display="static">
+                <input class="form-control search-input search" type="search" placeholder="Buscar processo..." aria-label="Search" />
+                <span class="fas fa-search search-box-icon"></span>
+            </form>
+        </div>
+
+        <div class="table-responsive scrollbar">
+            <table class="table table-sm fs-9 mb-0">
+                <thead>
+                    <tr>
+                        <th class="sort border-top ps-3" data-sort="numero">Número</th>
+                        <th class="sort border-top" data-sort="responsavel">Responsável</th>
+                        <th class="sort border-top text-end pe-3" data-sort="data">Entrada</th>
+                    </tr>
+                </thead>
+                <tbody class="list">
+                    {% for p in processos %}
+                    <tr class="align-middle">
+                        <td class="numero ps-3 fw-bold text-primary">{{ p.fase_completa}} - {{ p.numero }}</td>
+                        <td class="responsavel text-body-emphasis">
+                            {{ p.responsavel.nome_completo|default:"Não atribuído" }}
+                        </td>
+                        <td class="data text-end pe-3">{{ p.data_entrada|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-body-tertiary">Nenhum processo encontrado. Execute a sincronização.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="d-flex justify-content-center mt-3">
+            <button class="btn btn-sm btn-phoenix-primary me-1" type="button" data-list-pagination="prev"><span>Anterior</span></button>
+            <ul class="pagination mb-0"></ul>
+            <button class="btn btn-sm btn-phoenix-primary ms-1" type="button" data-list-pagination="next"><span>Próximo</span></button>
+        </div>
+    </div>
+</div>
+{% endblock %}

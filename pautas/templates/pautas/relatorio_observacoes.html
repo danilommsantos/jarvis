@@ -1,0 +1,70 @@
+{% extends "main/base.html" %}
+
+{% block conteudo %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Relatório de Observações</h2>
+            <small class="text-700">{{ pauta.titulo }}</small>
+        </div>
+        <button class="btn btn-primary" onclick="copyToClipboard()">
+            <span class="fas fa-copy me-2"></span>Copiar para E-mail
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body fs-5" id="area-relatorio" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">
+            {# O regroup funciona bem aqui porque sua QuerySet já vem ordenada por minutante #}
+            {% regroup revisoes by minutante as lista_por_minutante %}
+            
+            {% for grupo in lista_por_minutante %}
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #2c7be5; text-transform: uppercase;">
+                        RESPONSÁVEL: {{ grupo.grouper.user.first_name|default:"Desconhecido" }}
+                    </strong>
+                </div>
+
+                {% for rev in grupo.list %}
+                    <div style="margin-top: 15px;">
+                        <strong>{{ rev.processo.fase_completa }} - {{ rev.processo.numero }} - {{ rev.minutante.user.first_name|title|default:"Desconhecido" }}</strong>
+                    </div>
+                    
+                    {% if rev.anotacoes %} 
+                        <div style="font-style: italic; margin-bottom: 5px;">{{ rev.anotacoes }}</div> 
+                    {% endif %}
+                    
+                    {% for obs in rev.observacoes.all %}
+                        <div style="margin-top: 5px;"><strong>Tema:</strong></div>
+                        <div>{{ obs.tema }}</div>
+                        <div style="margin-top: 5px;"><strong>Observações:</strong></div>
+                        <div>{% if obs.duvida %}Dúvida: {% endif %}{{ obs.observacao|linebreaksbr }}</div>
+                    {% endfor %}                    
+                    <br>
+                    {% endfor %}
+                <div style="margin-top: 10px; color: #999;">
+                    >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                </div>
+                <br>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard() {
+    const range = document.createRange();
+    const container = document.getElementById("area-relatorio");
+    range.selectNode(container);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    
+    try {
+        const successful = document.execCommand('copy');
+        if(successful) alert("Relatório copiado com sucesso!");
+    } catch (err) {
+        alert("Erro ao copiar. Por favor, selecione o texto manualmente.");
+    }
+    window.getSelection().removeAllRanges();
+}
+</script>
+{% endblock %}

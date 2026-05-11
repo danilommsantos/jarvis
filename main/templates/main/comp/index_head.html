@@ -9,7 +9,7 @@
     <!-- ===============================================-->
     <!--    Document Title-->
     <!-- ===============================================-->
-    <title>J.A.R.V.I.S.</title>
+    <title>{% if processo %}{{ processo }}{% else %} J.A.R.V.I.S.{% endif %}</title>
 
     <!-- ===============================================-->
     <!--    Favicons-->
@@ -17,27 +17,34 @@
     <link
         rel="apple-touch-icon"
         sizes="180x180"
-        href="{% static 'assets/img/favicons/apple-touch-icon.png' %}" />
+        href="{% static 'assets/img/favicons/apple-touch-icon.png' %}"
+    />
     <link
         rel="icon"
         type="image/png"
         sizes="32x32"
-        href="{% static 'assets/img/favicons/sigma-32x32.png' %}" />
+        href="{% static 'assets/img/favicons/sigma-32x32.png' %}"
+    />
     <link
         rel="icon"
         type="image/png"
         sizes="16x16"
-        href="{% static 'assets/img/favicons/sigma-16x16.png' %}" />
+        href="{% static 'assets/img/favicons/sigma-16x16.png' %}"
+    />
     <link
         rel="shortcut icon"
         type="image/x-icon"
-        href="{% static 'assets/img/favicons/sigma.ico' %}" />
+        href="{% static 'assets/img/favicons/sigma.ico' %}"
+    />
     <link
         rel="manifest"
-        href="{% static 'assets/img/favicons/manifest.json' %}" />
+        href="{% static 'assets/img/favicons/manifest.json' %}"
+    />
+    <link href="{% static 'vendors/fontawesome/css/all.min.css' %}" rel="stylesheet" />
     <meta
         name="msapplication-TileImage"
-        content="{% static 'assets/img/favicons/mstile-150x150.png' %}" />
+        content="{% static 'assets/img/favicons/mstile-150x150.png' %}"
+    />
     <meta name="theme-color" content="#ffffff" />
     <script src="{% static 'vendors/imagesloaded/imagesloaded.pkgd.min.js' %}"></script>
     <script src="{% static 'vendors/simplebar/simplebar.min.js' %}"></script>
@@ -50,47 +57,54 @@
             phoenixNavbarTopShape: "slim",
         });
     </script>
-    
+
     <!-- ===============================================-->
     <!--    Stylesheets-->
     <!-- ===============================================-->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
     <link
-    href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&amp;display=swap"
-    rel="stylesheet" />
+        href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&amp;display=swap"
+        rel="stylesheet"
+    />
     <link
-    href="{% static 'vendors/simplebar/simplebar.min.css' %}"
-    rel="stylesheet" />
+        href="{% static 'vendors/simplebar/simplebar.min.css' %}"
+        rel="stylesheet"
+    />
+    <link href="{% static 'styles\diagramacao.css' %}" rel="stylesheet" />
     <link
-    href="{% static 'styles\diagramacao.css' %}"
-    rel="stylesheet" />
+        rel="stylesheet"
+        href="https://unicons.iconscout.com/release/v4.0.8/css/line.css"
+    />
     <link
-    rel="stylesheet"
-    href="https://unicons.iconscout.com/release/v4.0.8/css/line.css" />
+        href="{% static 'assets/css/theme-rtl.min.css' %}"
+        type="text/css"
+        rel="stylesheet"
+        id="style-rtl"
+    />
     <link
-    href="{% static 'assets/css/theme-rtl.min.css' %}"
-    type="text/css"
-    rel="stylesheet"
-    id="style-rtl" />
+        href="{% static 'assets/css/theme.min.css' %}"
+        type="text/css"
+        rel="stylesheet"
+        id="style-default"
+    />
     <link
-    href="{% static 'assets/css/theme.min.css' %}"
-    type="text/css"
-    rel="stylesheet"
-    id="style-default" />
+        href="{% static 'assets/css/user-rtl.min.css' %}"
+        type="text/css"
+        rel="stylesheet"
+        id="user-style-rtl"
+    />
     <link
-    href="{% static 'assets/css/user-rtl.min.css' %}"
-    type="text/css"
-    rel="stylesheet"
-    id="user-style-rtl" />
-    <link
-    href="{% static 'assets/css/user.min.css' %}"
-    type="text/css"
-    rel="stylesheet"
-    id="user-style-default" />
-    
-    
+        href="{% static 'assets/css/user.min.css' %}"
+        type="text/css"
+        rel="stylesheet"
+        id="user-style-default"
+    />
+
     <script>
         var phoenixIsRTL = window.config.config.phoenixIsRTL;
         if (phoenixIsRTL) {
@@ -106,11 +120,28 @@
             userLinkRTL.setAttribute("disabled", true);
         }
     </script>
+    <style>
+        .toast-container-custom {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            width: auto;
+            max-width: 500px;
+        }
+        .toast-container-custom .alert {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+    </style>
     <link href="{% static 'vendors/leaflet/leaflet.css' %}" rel="stylesheet" />
     <link
         href="{% static 'vendors/leaflet.markercluster/MarkerCluster.css' %}"
-        rel="stylesheet" />
+        rel="stylesheet"
+    />
     <link
         href="{% static 'vendors/leaflet.markercluster/MarkerCluster.Default.css' %}"
-        rel="stylesheet" />    
+        rel="stylesheet"
+    />
 </head>

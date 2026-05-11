@@ -1,0 +1,340 @@
+{% extends "main/base.html" %} 
+{% block conteudo %}
+<div class="container-fluid mt-3 mb-9">
+    <div class="row align-items-center justify-content-between mb-4">
+        <div class="col-auto">
+            <h2 class="mb-2">{{ pauta.titulo }}</h2>
+            {% if pauta.pasta %}
+                <p class="text-500 small mb-0">
+                    <span class="fas fa-folder me-1 text-warning"></span>{{ pauta.pasta }}
+                </p>
+            {% endif %}
+        </div>
+        
+        <div class="col-auto d-flex gap-2">
+            {% if pauta.pasta %}
+                <a href="{% url 'pautas:extrair_minutantes_docx' pauta.pk %}" class="btn btn-phoenix-secondary">
+                    <span class="fas fa-file-word me-2"></span>Extrair Responsáveis
+                </a>
+            {% else %}
+                <button class="btn btn-phoenix-secondary" disabled title="Configure a pasta no Admin">
+                    <span class="fas fa-file-word me-2"></span>Extrair Responsáveis
+                </button>
+            {% endif %}
+            <a href="{% url 'pautas:relatorio_observacoes' pauta.pk %}" class="btn btn-phoenix-primary">
+                <span class="fas fa-clipboard-list me-2"></span>Gerar Relatório
+            </a>
+            <div class="col-auto">
+                <a href="{% url 'pautas:proxima_revisao' pauta.pk %}" class="btn btn-primary">
+                    <span class="fas fa-play me-2"></span>Revisar
+                </a>
+            </div>
+            <button
+                type="button"
+                class="btn btn-success"
+                data-bs-toggle="modal"
+                data-bs-target="#modalMarcarRR"
+            >
+                <span class="fas fa-check-double me-2"></span>Marcar RR Provido
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalAdicionarProcesso"
+            >
+                <span class="fas fa-plus me-2"></span>Adicionar Processo
+            </button>
+        </div>
+    </div>
+</div>
+
+    <div class="row g-4">
+        <div class="col-lg-9">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Processos na Pauta</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-0">
+                            <thead class="table">
+                                <tr>
+                                    <th scope="col" class="text-end pe-3">
+                                        Número do Processo
+                                    </th>
+                                    <th scope="col" class="text-center">Minutante</th>
+                                    <th scope="col" class="text-center">Lote</th>
+                                    <th scope="col" class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for revisao in revisoes %}
+                                <tr>
+                                    <td class="col-7 text-end align-middle fw-semi-bold pe-3">
+                                        <!-- Verifica se a lista de atendimentos ou memoriais tem algum item -->
+                                        {% if revisao.processo.memoriais.all %}
+                                            <span class="badge badge-phoenix badge-phoenix-warning me-2" title="Este processo possui Memorial">
+                                                <span class="fa fa-file-alt fs-8"></span>
+                                            </span>
+                                        {% endif %}
+                                        {% if revisao.processo.atendimentos.all %}
+                                            <span class="badge badge-phoenix badge-phoenix-warning me-2" title="Este processo possui Atendimento">
+                                                <span class="fa fa-headset fs-8"></span> 
+                                            </span>
+                                        {% endif %}
+                                        <a href="{% url 'pautas:revisar_processo' revisao.pk %}">
+                                            {{ revisao.processo.fase_completa }} - {{ revisao.processo.numero }}
+                                        </a>
+                                    </td>
+                                    
+                                    <td class="col-1 align-middle text-center">
+                                        <span class="badge badge-phoenix badge-phoenix-info" title="{{ revisao.minutante }}">
+                                            {{ revisao.minutante.inicial|default:"Desconhecido" }} 
+                                        </span>
+                                    </td>
+
+                                    <td class="col-1 align-middle text-center">
+                                        {{ revisao.lista_origem.titulo|default:"Sem lote" }}
+                                    </td>
+                                    
+                                    <td class="col-3 align-middle text-center">
+                                        {% for status in revisao.status.all %}
+                                            {% if forloop.last %}
+                                                <span class="badge badge-phoenix badge-phoenix-info">
+                                                    {{ status.nome }}
+                                                </span>
+                                            {% endif %}
+                                        {% empty %}
+                                            <span class="col-6 badge badge-phoenix badge-phoenix-secondary">
+                                                Pendente
+                                            </span>
+                                        {% endfor %}
+                                    </td>                                  
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td
+                                        colspan="3"
+                                        class="text-center py-4 text-500"
+                                    >
+                                        Nenhum processo vinculado a esta pauta.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Resumo da Pauta</h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-primary mb-0">
+                        {{ total_processos }}
+                    </h1>
+                    <p class="text-700 fs--1 mb-0">
+                        Total de processos a revisar
+                    </p>
+                    <h2 class="display-6 text-primary mb-0">
+                        {{ pauta.data_inicio|date:"d.m.Y" }}
+                    </h2>
+                    <p class="text-700 fs--1 mb-0">
+                        Data de abertura
+                    </p>
+                    <h2 class="display-6 text-primary mb-0">
+                        {{ pauta.data_final|date:"d.m.Y" }}
+                    </h2>
+                    <p class="text-700 fs--1 mb-0">
+                        Data de fechamento
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Por Resultado da Correção</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in relatorio_status %}
+                        <li
+                            class="list-group-item d-flex justify-content-between align-items-center"
+                        >
+                            {{ item.status__nome|default:"Pendente" }}
+                            <span class="badge bg-primary rounded-pill"
+                                >{{ item.total }}</span
+                            >
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted py-3 px-3">
+                            Sem dados.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Por Minutate</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in relatorio_minutante %}
+                        <li
+                            class="list-group-item d-flex justify-content-between align-items-center"
+                            title="{{ item.minutante__nome_completo }}"
+                        >
+                            <div>
+                                {{ item.minutante__user__first_name|default:"Desconhecido"|title }}
+                                <span class="badge badge-phoenix badge-phoenix-info">
+                                    {{ item.minutante__inicial|default:"-" }}
+                                </span>
+                            </div>
+                            <span class="badge bg-primary rounded-pill"
+                                >{{ item.total }}</span
+                            >
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted py-3 px-3">
+                            Sem dados.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Por Classe de Processo</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in relatorio_classes %}
+                        <li
+                            class="list-group-item d-flex justify-content-between align-items-center"
+                        >
+                            {{ item.processo__classe__nome|default:"Não informada" }}
+                            <span class="badge bg-secondary rounded-pill"
+                                >{{ item.total }}</span
+                            >
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted py-3 px-3">
+                            Sem dados.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMarcarRR" tabindex="-1" aria-labelledby="modalMarcarRRLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-success">
+            <div class="modal-header bg-success-subtle">
+                <h5 class="modal-title text-success" id="modalMarcarRRLabel">
+                    Marcar Processos com RR Provido em Lote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <form method="POST" action="{% url 'pautas:pauta' pauta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-success" for="{{ form_rr.processos_rr_providos.id_for_label }}">
+                            {{ form_rr.processos_rr_providos.label }}
+                        </label>
+                        {{ form_rr.processos_rr_providos }}
+                        <div class="form-text">
+                            Cole os números. Se o processo já existir nesta pauta, ele será automaticamente marcado como "RR Provido".
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" name="btn_marcar_rr" class="btn btn-success">
+                        Marcar Processos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div
+    class="modal fade"
+    id="modalAdicionarProcesso"
+    tabindex="-1"
+    aria-labelledby="modalAdicionarProcessoLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAdicionarProcessoLabel">
+                    Incluir Processos em Lote
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Fechar"
+                ></button>
+            </div>
+
+            <form method="POST" action="{% url 'pautas:pauta' pauta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label
+                            class="form-label fw-bold"
+                            for="{{ form.processos_numeros.id_for_label }}"
+                        >
+                            {{ form.processos_numeros.label }}
+                        </label>
+                        {{ form.processos_numeros }}
+                        <div class="form-text">
+                            {{ form.processos_numeros.help_text }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label
+                                class="form-label fw-bold"
+                                for="{{ form.lista_origem.id_for_label }}"
+                            >
+                                {{ form.lista_origem.label }}
+                            </label>
+                            {{ form.lista_origem }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" name="btn_adicionar_lote" class="btn btn-primary">
+                        Processar e Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

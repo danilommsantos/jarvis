@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* 1. Contentor Principal em Flexbox */
+    #changelist {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        gap: 20px !important; 
+    }
+    #changelist > div > div {
+        margin-right: 10px !important;
+    }
+    /* 2. Tabela à ESQUERDA (4/5 = 80%) */
+    #changelist-form {
+        width: 100% !important; 
+        flex-grow: 1 !important;
+        /* Remove a barra de rolagem horizontal */
+        overflow-x: hidden !important; 
+    }
+
+    /* Força a grelha da tabela a preencher os seus 80% sem vazar */
+    #result_list {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important; /* Trava as colunas no limite da tela */
+        word-wrap: break-word !important; /* Quebra textos muito longos */
+    }
+
+    /* NOVA REGRA: Impede que os campos de edição (list_editable) quebrem a tabela */
+    #result_list input[type="text"],
+    #result_list textarea {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important; /* Garante que as bordas não somem na largura */
+    }
+
+    /* 3. Filtro à DIREITA (1/5 = 20%) */
+    #changelist-filter {
+        position: static !important; 
+        width: 20% !important; 
+        min-width: 250px !important; 
+        flex-shrink: 0 !important; 
+        margin: 0 !important; 
+        border-left: 1px solid var(--border-color, #eee) !important; 
+        padding-left: 15px; 
+    }
+</style>
+{% endblock %}

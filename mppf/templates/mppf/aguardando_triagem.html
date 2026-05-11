@@ -1,0 +1,51 @@
+{% extends "main/base.html" %} 
+{% load static %}
+{% block conteudo %}
+<div class="container mt-4">
+    <h2 class="mb-4">Relatório: Aguardando Triagem</h2>
+    <p class="text-muted">Mostrando processos que aguardam triagem, priorizando as maiores decisões de admissibilidade. Total na fila: <strong>{{ total_aguardando }}</strong>.</p>
+    
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Número do Processo</th>
+                    <th scope="col" class="text-center">Páginas</th>
+                    <th scope="col" class="text-center">Qtd. de Recursos</th>                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for triagem in triagens %}
+                <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>
+                        <a href="{% url 'mppf:realizar_triagem' triagem.id %}">
+                            {{ triagem.processo.fase_completa|default:"" }} - {{ triagem.processo.numero }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {% if triagem.paginas > 20 %}bg-danger{% elif triagem.paginas > 10 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                            {{ triagem.paginas }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {{ triagem.quantidade_de_recursos|default_if_none:"-" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">
+                        Nenhum processo pendente na fila de triagem. Excelente trabalho!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'mppf:kanban_triagem' %}" class="btn btn-outline-primary">Voltar ao Kanban</a>
+    </div>
+</div>
+{% endblock %}

@@ -2,28 +2,93 @@
 
 <p class="navbar-vertical-label">Sistemas TST</p>
 
-{% render_menu_item label="Home" icon="home" target="index" %}
-{% render_menu_item label="Acervo Geral" icon="database" target="dashboard_processos" %}
-{% render_menu_item label="PJe" icon="filter" target="https://pje.tst.jus.br" %} 
-{% render_menu_item label="Configurações" icon="settings" target="admin:index" %}
+{% render_menu_item label="Home" icon="fa-regular fa-house" target="index" %} 
+{% render_menu_item label="Acervo Geral" icon="fa-solid fa-database" target="dashboard_processos" %} 
+{% render_menu_item label="PJe" icon="fas fa-external-link-alt" target="https://pje.tst.jus.br" %} 
+{% render_menu_item label="Configurações" icon="fa-solid fa-gear" target="admin:index" %} 
 {% load menu_tags %}
 
-<p class="navbar-vertical-label">Gestão de Acervo</p>
+<p class="navbar-vertical-label">J.A.R.V.I.S.</p>
 
-{% render_menu_item label="Dashboard" icon="pie-chart" target="index" %}
+{% render_menu_item label="Dashboard" icon="fa-solid fa-gauge-high" target="index" %}
 
 <div class="nav-item-wrapper">
-    <a class="nav-link dropdown-indicator label-1" href="#nv-acervo" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="nv-acervo">
+    <a
+        class="nav-link dropdown-indicator label-1"
+        href="#nv-mppf"
+        role="button"
+        data-bs-toggle="collapse"
+        aria-expanded="false"
+        aria-controls="nv-acervo"
+    >
         <div class="d-flex align-items-center">
-            <div class="dropdown-indicator-icon"><span class="fas fa-caret-right"></span></div>
-            <span class="nav-link-icon"><span data-feather="briefcase"></span></span>
+            <div class="dropdown-indicator-icon">
+                <span class="fas fa-caret-right"></span>
+            </div>
+            <span class="nav-link-icon"
+                ><i class="fa-regular fa-pen-to-square"></i>
+            </span>
+            <span class="nav-link-text">MPPF</span>
+        </div>
+    </a>
+    <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent" id="nv-mppf">
+            {% render_subitem label="Kanban" target="mppf:kanban_triagem" %}
+            {% render_subitem label="Rejeitados" target="mppf:relatorio_nao_fazer" %}
+            {% render_subitem label="Triar" target="mppf:relatorio_aguardando_triagem" %}
+        </ul>
+    </div>
+</div>
+<div class="nav-item-wrapper">
+    <a
+        class="nav-link dropdown-indicator label-1"
+        href="#nv-pautas"
+        role="button"
+        data-bs-toggle="collapse"
+        aria-expanded="false"
+        aria-controls="nv-acervo"
+    >
+        <div class="d-flex align-items-center">
+            <div class="dropdown-indicator-icon">
+                <span class="fas fa-caret-right"></span>
+            </div>
+            <span class="nav-link-icon"
+                ><i class="fa-regular fa-calendar"></i></span>
+            </span>
+            <span class="nav-link-text">Pautas</span>
+        </div>
+    </a>
+    <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent" id="nv-pautas">
+            {% render_subitem label="Lista Pautas" target="pautas:lista_pautas" %}
+        </ul>
+    </div>
+</div>
+<div class="nav-item-wrapper">
+    <a
+        class="nav-link dropdown-indicator label-1"
+        href="#nv-processos"
+        role="button"
+        data-bs-toggle="collapse"
+        aria-expanded="false"
+        aria-controls="nv-acervo"
+    >
+        <div class="d-flex align-items-center">
+            <div class="dropdown-indicator-icon">
+                <span class="fas fa-caret-right"></span>
+            </div>
+            <span class="nav-link-icon"
+                ><i class="fa-regular fa-folder-open"></i>
+            </span>
             <span class="nav-link-text">Processos</span>
         </div>
     </a>
     <div class="parent-wrapper label-1">
-        <ul class="nav collapse parent" id="nv-acervo">
-            {% render_subitem label="Ver Todos" target="dashboard_processos" %}
-            {% render_subitem label="Sincronizar" target="executar_bot_acervo" %}            
+        <ul class="nav collapse parent" id="nv-processos">
+            {% render_subitem label="Lista Processos" target="lista_processos" %} 
+            {% render_subitem label="Atualizar Acervo" target="atualizar_acervo" %}
+            {% render_subitem label="Atualizar Peças Json" target="atualizar_json_processos" %}
+            {% render_subitem label="Baixar DAs de AIRRs" target="baixar_texto_DA_AIRRs" %}
         </ul>
     </div>
 </div>

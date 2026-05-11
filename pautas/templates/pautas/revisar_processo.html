@@ -1,0 +1,801 @@
+{% extends "main/base.html" %} {% block conteudo %}
+<div class="container-fluid mt-3 mb-9">
+    <div class="row align-items-center justify-content-between mb-4">
+        <div class="col-auto">
+            <h6 class="text-500 mb-1">
+                <a href="{% url 'pautas:pauta' revisao.pauta.pk %}"
+                    >← Voltar para {{ revisao.pauta.titulo }}</a
+                >
+            </h6>
+            <h2 class="mb-0">
+                {{ processo.fase_completa }} - {{ processo.numero }}
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a
+                href="{% url 'pautas:alternar_pular' revisao.pk %}"
+                class="btn {% if revisao.pulado %} btn-warning {% else %} btn-phoenix-warning {% endif %}"
+            >
+                <span class="fas fa-forward me-2"></span>Pular
+            </a>
+            <button
+                type="submit"
+                form="form-revisao"
+                name="btn_salvar"
+                class="btn btn-outline-primary"
+            >
+                <span class="fas fa-save me-2"></span>Salvar
+            </button>
+            <button
+                type="submit"
+                form="form-revisao"
+                name="btn_proximo"
+                id="btn-salvar-proximo"
+                class="btn btn-primary"
+            >
+                Salvar e Próximo <span class="fas fa-chevron-right ms-2"></span>
+            </button>
+        </div>
+    </div>
+
+    <form id="form-revisao" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="salvar_revisao" />
+
+        <div class="row g-4 mb-4">
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div
+                        class="card-header border-bottom bg-subtle-primary align-items-center py-3"
+                    >
+                        <h5 class="mb-0 text-center"><span class="fas fa-clock me-2"></span>Estatísticas</h5>
+                    </div>
+                    <div class="card-body fs--1 p-3">
+                        <div
+                            class="d-flex justify-content-between align-items-center p-1 rounded mb-3 border"
+                        >
+                            <div class="d-flex justify-content-center gap-2 w-100">
+                                <span
+                                    id="display-tempo"
+                                    class="fw-bold fs-8 font-monospace text-primary"
+                                    >00:00</span
+                                >
+                                <button
+                                    type="button"
+                                    id="btn-play-pause"
+                                    class="btn btn-sm btn-subtle-secondary p-2  px-4"
+                                    title="Pausar/Continuar"
+                                >
+                                    <span id="wrapper-pause">
+                                        <span class="fas fa-pause"></span>
+                                    </span>
+
+                                    <span id="wrapper-play" class="d-none">
+                                        <span class="fas fa-play"></span>
+                                    </span>
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    form="form-reset-tempo" 
+                                    class="btn btn-sm btn-subtle-danger p-2  px-4" 
+                                    title="Zerar cronômetro" 
+                                    onclick="return confirm('Tem certeza que deseja zerar o tempo desta revisão?');">
+                                    <span class="fas fa-undo"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Última revisão:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.ultima_tarefa }}</span
+                            >
+                        </div>
+
+                        <hr class="my-2 border-300" />
+
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold text-600">Servidor Atual:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.concluidos_servidor }} ({{ estatisticas.percentual_servidor }}%) de {{ estatisticas.total_servidor }} faltam {{ estatisticas.pendentes_servidor }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Média por revisão:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.media_servidor }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Tempo restante:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.estimativa_servidor }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Horário de conclusão:</span>
+                            <span class="fw-bold"
+                                >{{ estatisticas.horario_servidor }}</span
+                            >
+                        </div>                        
+
+                        <hr class="my-2 border-300" />
+
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Pauta:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.concluidos_total }} ({{ estatisticas.percentual_total }}%) de {{ estatisticas.total_pauta }} faltam {{ estatisticas.pendentes_total }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Média por revisão:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.media_total }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-600">Tempo restante:</span>
+                            <span class="fw-semi-bold"
+                                >{{ estatisticas.estimativa_total }}</span
+                            >
+                        </div>
+                        <div class="d-flex justify-content-between mb-0">
+                            <span class="text-600">Horário de conclusão:</span>
+                            <span class="fw-bold"
+                                >{{ estatisticas.horario_total }}</span
+                            >
+                        </div>                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header border-bottom  py-3">
+                        <h5 class="mb-0 text-center">Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column gap-2">
+                            {% for status in status_disponiveis %}
+                            <div class="w-100">
+                                <input
+                                    type="checkbox"
+                                    class="btn-check status-checkbox"
+                                    name="status"
+                                    value="{{ status.id }}"
+                                    id="status_{{ status.id }}"
+                                    autocomplete="off"
+                                    data-eh-revisado="{% if status.eh_revisado %}true{% else %}false{% endif %}"
+                                    {% if status in revisao.status.all %}checked{% endif %}
+                                />
+
+                                <label
+                                    class="btn w-100 text-center {% if status in revisao.status.all %}btn-primary{% else %}btn-subtle-primary{% endif %}"
+                                    for="status_{{ status.id }}"
+                                >
+                                    {{ status.nome }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div
+                        class="card-header border-bottom d-flex justify-content-between align-items-center py-3"
+                    >
+                        <h5 class="mb-0">Observações</h5>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalObservacao"
+                        >
+                            <span class="fas fa-plus me-1"></span>Acrescentar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column gap-3">
+                            {% for obs in observacoes %}
+                            <div
+                                class="card shadow-sm {% if obs.duvida %}border-warning{% else %}border{% endif %}"
+                            >
+                                <div
+                                    class="card-header border-bottom d-flex justify-content-between align-items-center py-2"
+                                >
+                                    <h6 class="mb-0 fw-bold text-900">
+                                        {{ obs.tema }} {% if obs.duvida %}
+                                        <span
+                                            class="badge badge-phoenix badge-phoenix-warning ms-2"
+                                            >Dúvida</span
+                                        >
+                                        {% endif %}
+                                    </h6>
+                                    <div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-link text-primary p-0 me-2"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditarObs{{ obs.id }}"
+                                            title="Editar"
+                                        >
+                                            <span class="fas fa-edit"></span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-link text-danger p-0"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalExcluirObs{{ obs.id }}"
+                                            title="Excluir"
+                                        >
+                                            <span class="fas fa-trash"></span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="card-body p-3">
+                                    <p class="mb-0 text-700 fs--1">
+                                        {{ obs.observacao|linebreaksbr }}
+                                    </p>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div
+                                class="card shadow-none border-dashed bg-transparent"
+                            >
+                                <div
+                                    class="card-body text-center text-500 py-4"
+                                >
+                                    Nenhuma dúvida ou observação registrada para
+                                    este processo.
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row g-4">
+            
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header border-bottom py-3">
+                        <h5 class="mb-0">Detalhes do Processo</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0 fs--1">
+                            <dt class="col-sm-4">Órgão Julgador</dt>
+                            <dd class="col-sm-8">
+                                {{ processo.orgao_julgador.nome|default:"-" }}
+                            </dd>
+
+                            <dt class="col-sm-4">Pauta</dt>
+                            <dd class="col-sm-8">
+                                {{ revisao.pauta|default:"-" }}
+                            </dd>
+
+                            <dt class="col-sm-4">Lote</dt>
+                            <dd class="col-sm-8">
+                                {{ revisao.lista_origem.titulo|default:"Sem lote" }}
+                            </dd>
+
+                            <dt class="col-sm-4">Minutante</dt>
+                            <dd class="col-sm-8">
+                                {% if revisao.minutante %} {{ revisao.minutante }}
+                                <span
+                                    class="badge badge-phoenix badge-phoenix-primary ms-2"
+                                    >{{ revisao.minutante.inicial }}</span
+                                >
+                                {% else %} Desconhecido {% endif %}
+                            </dd>
+                        </dl>
+                        <div class="d-flex flex-column gap-2 mb-3 mt-3">
+                            <a href="https://bemtevi.tst.jus.br/report/processo/{{ processo.numero }}" 
+                                target="_blank" 
+                                class="btn btn-outline-info btn-sm  w-100">
+                                <span class="fas fa-globe me-1"></span>BTV online
+                            </a>                            
+                            <a href="http://bemtevi-reports.ml-prd.rede.tst/report/processo/{{ processo.numero }}" 
+                            target="_blank" class="btn btn-outline-info btn-sm  w-100">
+                                <span class="fas fa-network-wired me-1"></span>BTV vpn
+                            </a>
+                        </div>
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <button type="button" 
+                                    class="btn btn-outline-info btn-sm w-100 btn-copiar" 
+                                    data-copiar="{{ revisao.processo.fase_completa }} - {{ revisao.processo.numero }} - {{ revisao.minutante.user.first_name|default:'Desconhecido'|title }}">
+                                <span class="fas fa-clipboard-user me-1 icone-btn"></span>Número com responsável
+                            </button>                            
+                            
+                            <button type="button" 
+                                    class="btn btn-outline-info btn-sm w-100 btn-copiar" 
+                                    data-copiar="{{ revisao.processo.numero }}">
+                                <span class="fas fa-copy me-1 icone-btn"></span>Número
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0 text-900"><span class="fas fa-layer-group me-2"></span>Peças do Processo (BTV)</h5>
+                        {% if btv_pecas %}
+                            <span class="badge badge-phoenix badge-phoenix-primary">{{ btv_pecas|length }} peças</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive scrollbar">
+                            <table class="table table-sm table-striped fs--1 mb-0">
+                                <thead class="bg-subtle-secondary">
+                                    <tr>
+                                        <th class="ps-3">Tipo</th>
+                                        <th class="text-center">Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if btv_pecas %}
+                                        {% for peca in btv_pecas %}
+                                        <tr>
+                                            <td class="align-middle ps-3 fw-semi-bold text-800">
+                                                <a href="{{ peca.downloadUrl }}/html" target="_blank" class="btn btn-link p-0">
+                                                    {{ peca.nomeTipoPeca|default:"N/D" }}
+                                                </a>
+                                            </td>
+                                            <td class="align-middle text-600 text-center">{{ peca.dataPublicacao|slice:":10" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center py-4 text-500 fst-italic">
+                                                <span class="fas fa-exclamation-circle me-1"></span>
+                                                Nenhuma peça encontrada ou API indisponível.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header border-bottom  py-3">
+                        <h5 class="mb-0">Anotações Gerais</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <textarea
+                            class="form-control h-100"
+                            name="anotacoes"
+                            rows="12"
+                            placeholder="Digite suas anotações gerais sobre este processo..."
+                        >{{ revisao.anotacoes }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <input
+            type="hidden"
+            name="tempo_gasto"
+            id="input_tempo_gasto"
+            value="{{ revisao.tempo_gasto|default:0 }}"
+            form="form-revisao"
+        />
+    </form>
+</div>
+
+<form id="form-reset-tempo" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="form_type" value="resetar_tempo" />
+</form>
+
+<div
+    class="modal fade"
+    id="modalObservacao"
+    tabindex="-1"
+    aria-labelledby="modalObservacaoLabel"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalObservacaoLabel">
+                    Acrescentar Observação ou Dúvida
+                </h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input
+                    type="hidden"
+                    name="form_type"
+                    value="salvar_observacao"
+                />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label
+                            class="form-label fw-bold"
+                            for="{{ form_obs.tema.id_for_label }}"
+                        >
+                            {{ form_obs.tema.label }}
+                        </label>
+                        {{ form_obs.tema }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            class="form-label fw-bold"
+                            for="{{ form_obs.observacao.id_for_label }}"
+                        >
+                            {{ form_obs.observacao.label }}
+                        </label>
+                        {{ form_obs.observacao }}
+                    </div>
+
+                    <div class="form-check">
+                        {{ form_obs.duvida }}
+                        <label
+                            class="form-check-label fw-bold text-warning"
+                            for="{{ form_obs.duvida.id_for_label }}"
+                        >
+                            É uma dúvida pendente?
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar Observação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for obs in observacoes %}
+<div
+    class="modal fade"
+    id="modalEditarObs{{ obs.id }}"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Observação</h5>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input
+                    type="hidden"
+                    name="form_type"
+                    value="editar_observacao"
+                />
+                <input type="hidden" name="obs_id" value="{{ obs.id }}" />
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tema</label>
+                        <input
+                            type="text"
+                            name="tema"
+                            class="form-control"
+                            value="{{ obs.tema }}"
+                            required
+                        />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observação</label>
+                        <textarea
+                            name="observacao"
+                            class="form-control"
+                            rows="4"
+                            required
+                        >
+                        {{ obs.observacao }}</textarea
+                        >
+                    </div>
+                    <div class="form-check">
+                        <input
+                            type="checkbox"
+                            name="duvida"
+                            class="form-check-input"
+                            id="edit_duvida_{{ obs.id }}"
+                            {% if obs.duvida %}checked{% endif %}
+                        />
+                        <label
+                            class="form-check-label fw-bold text-warning"
+                            for="edit_duvida_{{ obs.id }}"
+                            >É uma dúvida pendente?</label
+                        >
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div
+    class="modal fade"
+    id="modalExcluirObs{{ obs.id }}"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">Confirmar Exclusão</h5>
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                ></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <input
+                    type="hidden"
+                    name="form_type"
+                    value="excluir_observacao"
+                />
+                <input type="hidden" name="obs_id" value="{{ obs.id }}" />
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a observação abaixo?</p>
+                    <blockquote
+                        class="border-start border-3 border-danger ps-3 fst-italic"
+                    >
+                        "{{ obs.tema }}"
+                    </blockquote>
+                    <p class="text-danger mb-0 fs--1">
+                        <span class="fas fa-exclamation-triangle me-1"></span
+                        >Esta ação não poderá ser desfeita.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        Sim, Excluir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    // Colar número
+    document.addEventListener('DOMContentLoaded', function() {
+        const botoesCopiar = document.querySelectorAll('.btn-copiar');
+        
+        function mostrarAvisoCopiado(texto) {
+            const avisoAntigo = document.getElementById('aviso-copia');
+            if (avisoAntigo) avisoAntigo.remove();
+
+            const aviso = document.createElement('div');
+            aviso.id = 'aviso-copia';
+            aviso.className = 'position-fixed bottom-0 end-0 p-3 m-4 bg-success text-white rounded shadow-lg';
+            aviso.style.zIndex = '9999';
+            aviso.style.transition = 'opacity 0.5s ease-in-out';
+            
+            aviso.innerHTML = `
+                <div class="d-flex align-items-center fs--1">
+                    <span class="fas fa-check-circle me-2 fs-1"></span>
+                    <span><strong>Copiado:</strong> ${texto}</span>
+                </div>
+            `;
+
+            document.body.appendChild(aviso);
+
+            setTimeout(() => {
+                aviso.style.opacity = '0';
+                setTimeout(() => aviso.remove(), 500);
+            }, 5000);
+        }
+
+        botoesCopiar.forEach(botao => {
+            botao.addEventListener('click', async function() {
+                const textoParaCopiar = this.getAttribute('data-copiar');
+                const icone = this.querySelector('.icone-btn');
+                const classeOriginal = icone.className;
+
+                try {
+                    await navigator.clipboard.writeText(textoParaCopiar);
+                    icone.className = 'fas fa-check me-1 text-success';
+                    setTimeout(() => {
+                        icone.className = classeOriginal;
+                    }, 2000);
+                    mostrarAvisoCopiado(textoParaCopiar);
+                } catch (err) {
+                    console.error('Falha ao copiar: ', err);
+                    alert('Não foi possível copiar o texto. Verifique as permissões do navegador.');
+                }
+            });
+        });
+    });
+
+    // Checkboxes e Bloqueio do botão Salvar e Próximo
+    function atualizarBotaoProximo() {
+        const btnProximo = document.getElementById('btn-salvar-proximo');
+        const checkboxes = document.querySelectorAll('.status-checkbox');
+        let temRevisado = false;
+
+        checkboxes.forEach(function (cb) {
+            if (cb.checked && cb.getAttribute('data-eh-revisado') === 'true') {
+                temRevisado = true;
+            }
+        });
+
+        // Se nenhum status marcado tiver eh_revisado=True, desabilita o botão
+        btnProximo.disabled = !temRevisado;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const statusCheckboxes = document.querySelectorAll(".status-checkbox");
+
+        statusCheckboxes.forEach(function (checkbox) {
+            checkbox.addEventListener("change", function () {
+                const label = this.nextElementSibling;
+
+                if (this.checked) {
+                    label.classList.remove("btn-subtle-primary");
+                    label.classList.add("btn-primary");
+                } else {
+                    label.classList.remove("btn-primary");
+                    label.classList.add("btn-subtle-primary");
+                }
+                
+                // Dispara a checagem do botão toda vez que um status muda
+                atualizarBotaoProximo();
+            });
+        });
+        
+        // Dispara a checagem na primeira vez que a página carrega
+        atualizarBotaoProximo();
+    });
+
+    // --- CRONÔMETRO DE REVISÃO E INTERCEPTAÇÃO DE FORMULÁRIOS ---
+    let tempoGasto = parseInt(document.getElementById("input_tempo_gasto").value) || 0;
+    const display = document.getElementById("display-tempo");
+    const btnPlayPause = document.getElementById("btn-play-pause");
+    const wrapperPause = document.getElementById("wrapper-pause");
+    const wrapperPlay = document.getElementById("wrapper-play");
+    const inputTempo = document.getElementById("input_tempo_gasto");
+
+    const mediaServidor = parseFloat("{{ estatisticas.media_servidor_raw|stringformat:'f' }}".replace(",", ".")) || 0;
+
+    let isPaused = false;
+    let timerInterval;
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+        const s = (seconds % 60).toString().padStart(2, "0");
+        if (seconds >= 3600) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, "0");
+            return `${h}:${m}:${s}`;
+        }
+        return `${m}:${s}`;
+    }
+
+    function updateColor() {
+        if (isPaused) return;
+
+        if (mediaServidor === 0) {
+            display.className = "fw-bold fs-5 font-monospace text-primary";
+            return;
+        }
+
+        if (tempoGasto > mediaServidor * 2.5) {
+            display.className = "fw-bold fs-5 font-monospace text-danger"; 
+        } else if (tempoGasto > mediaServidor * 1.5) {
+            display.className = "fw-bold fs-5 font-monospace text-warning";
+        } else {
+            display.className = "fw-bold fs-5 font-monospace text-primary";
+        }
+    }
+
+    function updateDisplay() {
+        display.textContent = formatTime(tempoGasto);
+        inputTempo.value = tempoGasto;
+        updateColor();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            if (!isPaused) {
+                tempoGasto++;
+                updateDisplay();
+            }
+        }, 1000);
+    }
+
+    btnPlayPause.addEventListener("click", () => {
+        isPaused = !isPaused;        
+        if (isPaused) {
+            btnPlayPause.classList.replace("btn-subtle-secondary", "btn-warning");
+            
+            // Esconde o wrapper do Pause e mostra o do Play
+            wrapperPause.classList.add("d-none");
+            wrapperPlay.classList.remove("d-none");
+            
+            display.className = "fw-bold fs-5 font-monospace text-warning";
+        } else {
+            btnPlayPause.classList.replace("btn-warning", "btn-subtle-secondary");
+            
+            // Esconde o wrapper do Play e mostra o do Pause
+            wrapperPlay.classList.add("d-none");
+            wrapperPause.classList.remove("d-none");
+            
+            updateColor(); 
+        }
+    });
+    // Injeta o tempo atualizado em TODOS os formulários na hora do envio
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            let inputTempoExistente = this.querySelector('input[name="tempo_gasto"]');
+            
+            if (!inputTempoExistente) {
+                inputTempoExistente = document.createElement('input');
+                inputTempoExistente.type = 'hidden';
+                inputTempoExistente.name = 'tempo_gasto';
+                this.appendChild(inputTempoExistente);
+            }
+            
+            inputTempoExistente.value = tempoGasto;
+        });
+    });
+
+    updateDisplay();
+    startTimer();
+</script>
+{% endblock %}

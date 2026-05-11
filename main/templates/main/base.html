@@ -31,23 +31,21 @@
             <div id="conteudo" class="content">
                 <!-- Começa o bloco de mensagens -->
                 {% if messages %}
-                <div class="row">
-                    <div class="col-12">
-                        {% for message in messages %}
-                        <div
-                            class="alert alert-{{ message.tags }} alert-dismissible fade show"
-                            role="alert"
-                        >
-                            {{ message }}
-                            <button
-                                class="btn-close"
-                                type="button"
-                                data-bs-dismiss="alert"
-                                aria-label="Close"
-                            ></button>
-                        </div>
-                        {% endfor %}
+                <div class="toast-container-custom">
+                    {% for message in messages %}
+                    <div
+                        class="alert alert-{{ message.tags }} alert-dismissible fade show shadow"
+                        role="alert"
+                    >
+                        {{ message }}
+                        <button
+                            class="btn-close"
+                            type="button"
+                            data-bs-dismiss="alert"
+                            aria-label="Close"
+                        ></button>
                     </div>
+                    {% endfor %}
                 </div>
                 {% endif %}
                 <!-- Começa o bloco de conteúdo -->

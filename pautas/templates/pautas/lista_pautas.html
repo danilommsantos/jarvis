@@ -1,0 +1,98 @@
+{% extends "main/base.html" %} 
+{% block conteudo %}
+<div class="pb-5">
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h2 class="mb-0 text-900">Pautas de Julgamento</h2>
+                    <p class="text-700 mb-0">Gerencie e organize as sessões de processos</p>
+                </div>                
+            </div>
+
+            <div class="card shadow-none border border-300">
+                <div class="card-body pt-0 pb-3"> 
+                    
+                    <div id="pautasTable" data-list='{"valueNames":["nome","data_sessao","criado_em","atualizado_em"],"page":50,"pagination":true}'>
+                        
+                        <div class="row align-items-center justify-content-between py-4">
+                            <div class="col-12 col-md-auto">
+                                <div class="search-box">
+                                    <form class="position-relative" data-bs-toggle="search">
+                                        <input class="form-control search-input search" type="search" placeholder="Buscar pauta..." />
+                                        <span class="fas fa-search search-box-icon"></span>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive scrollbar">
+                            <table class="table table-sm fs--1 mb-0 border-top border-200">
+                                <thead>
+                                    <tr>
+                                        <th class="sort align-middle text-center" data-sort="nome" style="min-width: 250px">TÍTULO</th>
+                                        <th class="sort align-middle text-center" data-sort="data_sessao">TOTAL DE PROCESSOS</th>
+                                        <th class="sort align-middle text-center" data-sort="data_sessao">INÍCIO DA SESSÃO</th>
+                                        <th class="sort align-middle text-center" data-sort="criado_em">CRIADO EM</th>
+                                        <th class="sort align-middle text-center" data-sort="atualizado_em">ATUALIZADO</th>
+                                        <th class="text-end align-middle pe-0">AÇÕES</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="list">
+                                    {% for pauta in pautas %}
+                                    <tr class="hover-actions-trigger btn-reveal-trigger">
+                                        <td class="nome align-middle">
+                                            <a class="fw-bold text-900" href="{% url 'pautas:pauta' pauta.pk %}">
+                                                {{ pauta.titulo }}
+                                            </a>
+                                        </td>
+                                        <td class="data_sessao align-middle text-700 text-center">
+                                            {{ pauta.total_processos|default:"0" }}
+                                        </td>
+                                        <td class="data_sessao align-middle text-700 text-center">
+                                            {{ pauta.data_inicio|date:"d/m/Y" }}
+                                        </td>
+                                        <td class="criado_em align-middle text-600 text-center">
+                                            {{ pauta.criado_em|date:"d/m/Y H:i" }}
+                                        </td>
+                                        <td class="atualizado_em align-middle text-600 text-center">
+                                            {{ pauta.atualizado_em|date:"d/m/Y H:i" }}
+                                        </td>
+                                        <td class="text-end align-middle white-space-nowrap pe-0  text-center">
+                                            <div class="font-sans-serif btn-reveal-trigger position-static">
+                                                <button class="btn btn-sm dropdown-toggle dropdown-caret-none transition-none btn-reveal fs--2" type="button" data-bs-toggle="dropdown">
+                                                    <span class="fas fa-ellipsis-h fs--2"></span>
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-end py-2">
+                                                    <a class="dropdown-item" href="{% url 'pautas:pauta' pauta.pk %}">Visualizar</a>
+                                                    <a class="dropdown-item" href="#">Editar</a>
+                                                    <div class="dropdown-divider"></div>
+                                                    <a class="dropdown-item text-danger" href="#">Remover</a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5">
+                                            <p class="mb-0 text-600 italic">Nenhuma pauta cadastrada no momento.</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="fs--1 text-700" data-list-info="data-list-info"></span>
+                            <div class="d-flex">
+                                <button class="btn btn-sm btn-link" data-list-pagination="prev">Anterior</button>
+                                <ul class="mb-0 pagination"></ul>
+                                <button class="btn btn-sm btn-link pe-0" data-list-pagination="next">Próximo</button>
+                            </div>
+                        </div>
+                    </div> </div>
+            </div> </div>
+    </div>
+</div>
+{% endblock %}
