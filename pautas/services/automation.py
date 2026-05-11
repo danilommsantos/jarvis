@@ -16,24 +16,26 @@ def localizar_na_tela(caminho_imagem):
     try:
         tela = ImageGrab.grab(all_screens=True)
         return pyautogui.locate(caminho_imagem, tela, confidence=0.8, grayscale=True)
+    except pyautogui.ImageNotFoundException:
+        return None
     except Exception as e:
-        print(f"Erro ao localizar imagem '{caminho_imagem}': {e}")
+        print(f"Erro inesperado ao localizar imagem '{caminho_imagem}': {e}")
         return None
 
-def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao=None, acao_extra=None, timeout=1, max_tentativas=5):
+def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao=None, confirmacao_fn=None, acao_extra=None, timeout=1, max_tentativas=5):
     """
     1. Encontra e clica na imagem alvo.
     2. Opcional: Executa uma ação extra (como colar texto).
-    3. Opcional: Aguarda a 'imagem_confirmacao' aparecer por X segundos.
+    3. Opcional: Aguarda confirmação por imagem (img_confirmacao) e/ou por função (confirmacao_fn).
     4. Se a confirmação não aparecer, tenta o processo todo de novo (até max_tentativas).
     """
     for tentativa in range(1, max_tentativas + 1):
         print(f"\n--- [Tentativa {tentativa}/{max_tentativas}] Clicando em '{desc_alvo}' ---")
-        
+
         # PASSO 1: Encontrar e clicar no botão alvo
         start_busca = time.time()
         clicou = False
-        
+
         while time.time() - start_busca < timeout:
             pos_alvo = localizar_na_tela(img_alvo)
             if pos_alvo:
@@ -43,39 +45,41 @@ def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao
                 clicou = True
                 break
             time.sleep(0.5)
-            
+
         if not clicou:
             print(f" X Botão '{desc_alvo}' não encontrado. Tentando novamente...")
-            continue # Pula para a próxima rodada do loop for
-            
+            continue
+
         # PASSO 2: Ação extra opcional (ex: Colar número e dar Enter)
         if acao_extra:
-            time.sleep(0.5) # Pausa rápida para o clique fazer efeito
+            time.sleep(0.5)
             acao_extra()
-            
-        # PASSO 3: Se não tem imagem para confirmar, consideramos um sucesso
-        if not img_confirmacao:
+
+        # PASSO 3: Se não há confirmação configurada, consideramos um sucesso
+        if not img_confirmacao and not confirmacao_fn:
             return True
-            
-        # PASSO 4: Aguardar a imagem de confirmação (a próxima tela)
+
+        # PASSO 4: Aguardar confirmação por imagem e/ou por função
         print(f" > Aguardando '{desc_confirmacao}' (Timeout de {timeout}s)...")
         start_espera = time.time()
         confirmado = False
-        
+
         while time.time() - start_espera < timeout:
-            pos_confirma = localizar_na_tela(img_confirmacao)
-            if pos_confirma:
+            if img_confirmacao and localizar_na_tela(img_confirmacao):
                 print(f" V Imagem de referência '{desc_confirmacao}' confirmada!")
                 confirmado = True
                 break
+            if confirmacao_fn and confirmacao_fn():
+                print(f" V Confirmação alternativa de '{desc_confirmacao}' detectada!")
+                confirmado = True
+                break
             time.sleep(0.5)
-            
+
         if confirmado:
-            return True # O fluxo deu 100% certo! Sai da função.
+            return True
         else:
             print(f" X Timeout: '{desc_confirmacao}' não apareceu. Repetindo clique inicial...")
-            # O loop for vai girar e tentar clicar no botão original mais uma vez
-            
+
     print(f"!!! Falha Crítica: Esgotadas as {max_tentativas} tentativas para a ação '{desc_alvo}'.")
     return False
 
@@ -136,12 +140,15 @@ def abre_voto_ge(numero_processo):
         if not sucesso_consulta: 
             return False 
 
-        # 2. Clicar em Editar Voto -> Confirmar que "Abrir Word" apareceu
+        word_aberto = lambda: any(numero_processo in w.title for w in gw.getWindowsWithTitle('Word'))
+
+        # 2. Clicar em Editar Voto -> Confirmar via imagem OU via Word já aberto
         sucesso_editar = clicar_com_retry(
             img_alvo=img_editar,
             desc_alvo="Editar Voto",
             img_confirmacao=img_word,
-            desc_confirmacao="Abrir Word",
+            desc_confirmacao="Abrir Word ou Word aberto",
+            confirmacao_fn=word_aberto,
             timeout=10,
             max_tentativas=10
         )
@@ -149,21 +156,20 @@ def abre_voto_ge(numero_processo):
         if not sucesso_editar:
             return False
 
-        # 3. Clicar em Abrir Word -> Confirmar via pygetwindow que o Word abriu
-        sucesso_word_click = clicar_com_retry(
+        # 3. Clicar em Abrir Word (se aparecer) -> Confirmar via pygetwindow
+        clicar_com_retry(
             img_alvo=img_word,
             desc_alvo="Abrir Word",
+            confirmacao_fn=word_aberto,
+            desc_confirmacao="Word aberto",
             timeout=5,
             max_tentativas=3
         )
 
-        if not sucesso_word_click:
-            return False
-
         print(f" > Aguardando Word abrir para o processo {numero_processo}...")
         start_word = time.time()
         while time.time() - start_word < 30:
-            if any(numero_processo in w.title for w in gw.getWindowsWithTitle('Word')):
+            if word_aberto():
                 print(f" V Word aberto com sucesso para o processo {numero_processo}.")
                 return True
             time.sleep(1)
