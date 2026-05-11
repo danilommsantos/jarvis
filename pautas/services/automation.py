@@ -84,6 +84,17 @@ def clicar_com_retry(img_alvo, desc_alvo, img_confirmacao=None, desc_confirmacao
     return False
 
 
+
+def word_aberto(numero_processo):
+    print(gw.getWindowsWithTitle('Word'))
+    for w in gw.getWindowsWithTitle('Word'):
+        if numero_processo in w.title:
+            print(w.title)
+            return True
+    return False
+
+
+
 def abre_voto_ge(numero_processo):
     """Executa a rotina de cliques na janela do Vivaldi."""
     if any(numero_processo in w.title for w in gw.getWindowsWithTitle('Word')):
@@ -140,15 +151,14 @@ def abre_voto_ge(numero_processo):
         if not sucesso_consulta: 
             return False 
 
-        word_aberto = lambda: any(numero_processo in w.title for w in gw.getWindowsWithTitle('Word'))
-
+        
         # 2. Clicar em Editar Voto -> Confirmar via imagem OU via Word já aberto
         sucesso_editar = clicar_com_retry(
             img_alvo=img_editar,
             desc_alvo="Editar Voto",
             img_confirmacao=img_word,
             desc_confirmacao="Abrir Word ou Word aberto",
-            confirmacao_fn=word_aberto,
+            confirmacao_fn=lambda: word_aberto(numero_processo),
             timeout=10,
             max_tentativas=10
         )
@@ -156,20 +166,10 @@ def abre_voto_ge(numero_processo):
         if not sucesso_editar:
             return False
 
-        # 3. Clicar em Abrir Word (se aparecer) -> Confirmar via pygetwindow
-        clicar_com_retry(
-            img_alvo=img_word,
-            desc_alvo="Abrir Word",
-            confirmacao_fn=word_aberto,
-            desc_confirmacao="Word aberto",
-            timeout=5,
-            max_tentativas=3
-        )
-
         print(f" > Aguardando Word abrir para o processo {numero_processo}...")
         start_word = time.time()
         while time.time() - start_word < 30:
-            if word_aberto():
+            if word_aberto(numero_processo):
                 print(f" V Word aberto com sucesso para o processo {numero_processo}.")
                 return True
             time.sleep(1)
