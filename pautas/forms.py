@@ -1,5 +1,6 @@
 from django import forms
-from .models import ListaProcessos, ObservacaoRevisao
+from django.utils import timezone
+from .models import ListaProcessos, ObservacaoRevisao, Pauta
 
 class AdicionarProcessosLoteForm(forms.Form):
     processos_numeros = forms.CharField(
@@ -48,6 +49,28 @@ class ObservacaoRevisaoForm(forms.ModelForm):
             })
         }
         
+
+class MoverProcessosForm(forms.Form):
+    processos_numeros = forms.CharField(
+        label='Números dos Processos',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 10})
+    )
+    pauta_destino = forms.ModelChoiceField(
+        queryset=Pauta.objects.none(),
+        required=True,
+        label='Pauta de Destino',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        pauta_atual = kwargs.pop('pauta', None)
+        super().__init__(*args, **kwargs)
+        hoje = timezone.now().date()
+        qs = Pauta.objects.filter(data_inicio__gt=hoje)
+        if pauta_atual:
+            qs = qs.exclude(pk=pauta_atual.pk)
+        self.fields['pauta_destino'].queryset = qs
+
 
 class MarcarRRProvidoForm(forms.Form):
     processos_rr_providos = forms.CharField(

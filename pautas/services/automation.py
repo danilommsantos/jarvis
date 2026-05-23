@@ -143,7 +143,7 @@ def abre_voto_ge(numero_processo):
             desc_confirmacao="Editar Voto",
             acao_extra=acao_colar_e_buscar, # Passamos a função de colar/enter para ele executar
             timeout=10,
-            max_tentativas=10
+            max_tentativas=3
         )
         
 
@@ -160,7 +160,7 @@ def abre_voto_ge(numero_processo):
             desc_confirmacao="Abrir Word ou Word aberto",
             confirmacao_fn=lambda: word_aberto(numero_processo),
             timeout=10,
-            max_tentativas=10
+            max_tentativas=3
         )
 
         if not sucesso_editar:
@@ -179,4 +179,16 @@ def abre_voto_ge(numero_processo):
 
     except Exception as e:
         print(f"Erro inesperado na automação: {e}")
+        return False
+
+
+def abre_voto_pasta_pauta(pasta, fase_completa, numero, request=None):
+    from django.contrib import messages
+    caminho = os.path.join(pasta, f"{fase_completa} - {numero} - Voto.docx")
+    if os.path.exists(caminho):
+        os.startfile(caminho)
+        return True
+    else:
+        if request:
+            messages.error(request, f"Arquivo não encontrado: {caminho}")
         return False

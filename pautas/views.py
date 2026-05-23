@@ -16,9 +16,9 @@ from django.contrib import messages # Importe o sistema de mensagens
 from django.utils import timezone
 
 from .models import Pauta, RevisaoProcesso, ListaProcessos, ObservacaoRevisao, StatusRevisao, Memorial, AtendimentoAdvogado
-from .forms import AdicionarProcessosLoteForm, ObservacaoRevisaoForm, MarcarRRProvidoForm
+from .forms import AdicionarProcessosLoteForm, ObservacaoRevisaoForm, MarcarRRProvidoForm, MoverProcessosForm
 from .services.docx_service import DocxService
-from .services.automation import abre_voto_ge
+from .services.automation import abre_voto_ge, abre_voto_pasta_pauta
 
 from main.utils.utils import formatar_tempo, buscar_pecas_btv
 from processos.models import Processo, Classe
@@ -39,6 +39,7 @@ def pauta(request, pk):
     pauta = get_object_or_404(Pauta, pk=pk)
     form = AdicionarProcessosLoteForm(request.POST or None, pauta=pauta)
     form_rr = MarcarRRProvidoForm(request.POST)
+    form_mover = MoverProcessosForm(request.POST or None, pauta=pauta)
     
     if request.method == 'POST':
         # --- AÇÃO 1: Adicionar Processos em Lote ---
@@ -98,7 +99,57 @@ def pauta(request, pk):
                 # Dispara um alerta de sucesso que vai aparecer no seu base.html
                 messages.success(request, f"{adicionados} processos incluídos com sucesso! ({ignorados} ignorados por já estarem na pauta).")
                 return redirect('pautas:pauta', pk=pauta.pk)
-        # --- AÇÃO 2: Marcar RR Providos ---
+
+        # --- AÇÃO 2: Mover Processos para Outra Pauta ---
+        elif 'btn_mover_processos' in request.POST:
+            if form_mover.is_valid():
+                numeros_raw = form_mover.cleaned_data['processos_numeros']
+                pauta_destino = form_mover.cleaned_data['pauta_destino']
+
+                numeros_lista = re.split(r'[,\n\r;]+', numeros_raw)
+                movidos = 0
+                nao_encontrados = []
+                ja_existem = []
+
+                for num in numeros_lista:
+                    num_limpo = num.strip()
+                    if not num_limpo:
+                        continue
+
+                    if " - " in num_limpo:
+                        _, numero = formatar_numero_processo(num_limpo)
+                    else:
+                        from nup_poder_judiciario import NumeroUnicoProcesso as nup
+                        try:
+                            numero = nup(num_limpo).formatado()
+                        except Exception:
+                            nao_encontrados.append(num_limpo)
+                            continue
+
+                    revisao = RevisaoProcesso.objects.filter(pauta=pauta, processo__numero=numero).first()
+                    if not revisao:
+                        nao_encontrados.append(numero)
+                        continue
+
+                    if RevisaoProcesso.objects.filter(pauta=pauta_destino, processo__numero=numero).exists():
+                        ja_existem.append(numero)
+                        continue
+
+                    revisao.pauta = pauta_destino
+                    revisao.lista_origem = None
+                    revisao.save()
+                    movidos += 1
+
+                if movidos:
+                    messages.success(request, f"{movidos} processo(s) movido(s) para '{pauta_destino}'.")
+                if nao_encontrados:
+                    messages.warning(request, f"{len(nao_encontrados)} número(s) não encontrado(s) nesta pauta: {', '.join(nao_encontrados[:5])}{'...' if len(nao_encontrados) > 5 else ''}.")
+                if ja_existem:
+                    messages.error(request, f"{len(ja_existem)} processo(s) já existe(m) na pauta de destino: {', '.join(ja_existem[:5])}{'...' if len(ja_existem) > 5 else ''}.")
+
+                return redirect('pautas:pauta', pk=pauta.pk)
+
+        # --- AÇÃO 3: Marcar RR Providos ---
         elif 'btn_marcar_rr' in request.POST:
             if form_rr.is_valid():
                 rr_providos_raw = form_rr.cleaned_data.get('processos_rr_providos', '')
@@ -155,6 +206,7 @@ def pauta(request, pk):
         'relatorio_minutante': relatorio_minutante,
         'form': form,
         'form_rr': form_rr,
+        'form_mover': form_mover,
     }
     return render(request, 'pautas/pauta.html', context)
 
@@ -242,7 +294,8 @@ def revisar_processo(request, pk):
             pyperclip.copy(processo.numero)            
             # Cria a mensagem de aviso (equivalente ao sg.popup)
             messages.info(request, f"Copiado o número: {processo.numero}", extra_tags="timeout-2000")
-            abre_voto_ge(processo.numero)
+            # abre_voto_ge(processo.numero)
+            # abre_voto_pasta_pauta(pasta=revisao.pauta.pasta, fase_completa=processo.fase_completa, numero=processo.numero, request=request)
         except Exception as e:
             print(f"Erro no pyperclip/automação: {e}")
     

@@ -40,6 +40,14 @@
 
             <button
                 type="button"
+                class="btn btn-warning"
+                data-bs-toggle="modal"
+                data-bs-target="#modalMoverProcessos"
+            >
+                <span class="fas fa-exchange-alt me-2"></span>Mover Processos
+            </button>
+            <button
+                type="button"
                 class="btn btn-primary"
                 data-bs-toggle="modal"
                 data-bs-target="#modalAdicionarProcesso"
@@ -331,6 +339,49 @@
                     </button>
                     <button type="submit" name="btn_adicionar_lote" class="btn btn-primary">
                         Processar e Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalMoverProcessos" tabindex="-1" aria-labelledby="modalMoverProcessosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-warning">
+            <div class="modal-header bg-warning-subtle">
+                <h5 class="modal-title text-warning" id="modalMoverProcessosLabel">
+                    Mover Processos para Outra Pauta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+
+            <form method="POST" action="{% url 'pautas:pauta' pauta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="{{ form_mover.pauta_destino.id_for_label }}">
+                            {{ form_mover.pauta_destino.label }}
+                        </label>
+                        {{ form_mover.pauta_destino }}
+                        <div class="form-text">Apenas pautas com data de início futura são exibidas.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" for="{{ form_mover.processos_numeros.id_for_label }}">
+                            {{ form_mover.processos_numeros.label }}
+                        </label>
+                        {{ form_mover.processos_numeros }}
+                        <div class="form-text">
+                            Cole os números no mesmo formato usado ao adicionar (um por linha). Processos que já existirem na pauta de destino serão reportados como erro.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" name="btn_mover_processos" class="btn btn-warning">
+                        Mover Processos
                     </button>
                 </div>
             </form>

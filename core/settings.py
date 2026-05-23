@@ -10,10 +10,18 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Carrega variáveis do .env se python-dotenv estiver instalado
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    pass
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +52,7 @@ INSTALLED_APPS = [
     'mppf',
     'pautas',
     'processos',
+    'biblioteca',
 ]
 
 MIDDLEWARE = [
@@ -130,3 +139,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# ── GitHub / Biblioteca ───────────────────────────────────────────────────────
+# Configure no arquivo .env na raiz do projeto
+GITHUB_TOKEN  = os.environ.get('GITHUB_TOKEN', '')
+GITHUB_REPO   = os.environ.get('GITHUB_REPO', '')   # formato: "usuario/nome-do-repo"
+GITHUB_BRANCH = os.environ.get('GITHUB_BRANCH', 'main')
