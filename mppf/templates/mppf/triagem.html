@@ -58,13 +58,27 @@
                     </h4>
                     
                     <div class="d-flex gap-2">
-                        <button class="btn btn-primary btn-sm" onclick="copiarDA()" title="Copiar texto original">
-                            <span class="fa-solid far fas far fa-copy me-0"></span> Copiar
+                        <form method="POST" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_name" value="baixar_DA">
+                            <button type="submit" class="btn btn-outline-info btn-sm"
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                    title="Baixar texto da DA do tribunal">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </form>
+
+                        <button class="btn btn-outline-primary btn-sm" onclick="copiarDA()"
+                                data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                title="Copiar texto original da DA">
+                            <i class="fas fa-copy"></i>
                         </button>
-                        
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarDA">
-                            <span>Editar</span>
-                            <span class="fa-solid far fas far fa-edit me-0"></span>
+
+                        <button class="btn btn-outline-primary btn-sm"
+                                data-bs-target="#modalEditarDA"
+                                title="Editar texto da DA"
+                                data-bs-toggle="modal">
+                            <i class="fas fa-edit"></i>
                         </button>
                     </div>
                 </div>
@@ -148,7 +162,7 @@
                             </button>
                         </form>
                         <button 
-                            class="btn btn-primary btn-sm shadow-sm" 
+                            class="btn btn-outline-primary btn-sm shadow-sm" 
                             data-bs-toggle="modal" 
                             data-bs-target="#modalAdicionarMateria" 
                             title="Adicionar nova matéria manualmente">
@@ -368,8 +382,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar Edição do Texto</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-save me-1"></i> Salvar Edição do Texto</button>
                 </div>
             </form>
         </div>
@@ -458,8 +472,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar Expressão</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-primary"><i class="fas fa-save me-1"></i> Salvar Expressão</button>
                 </div>
             </form>
         </div>
@@ -497,8 +511,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-primary">
                         <i class="fas fa-save me-1"></i> Criar e Vincular
                     </button>
                 </div>
@@ -532,13 +546,20 @@
                 </ul>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Inicializa tooltips Bootstrap
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            new bootstrap.Tooltip(el);
+        });
+    });
+
     function copiarDA() {
         const textoBruto = document.getElementById("textoBrutoCopiar").value;
         

@@ -14,7 +14,7 @@
         <div class="col-auto">
             <a
                 href="{% url 'pautas:alternar_pular' revisao.pk %}"
-                class="btn {% if revisao.pulado %} btn-warning {% else %} btn-phoenix-warning {% endif %}"
+                class="btn {% if revisao.pulado %} btn-outline-warning {% else %} btn-phoenix-warning {% endif %}"
             >
                 <span class="fas fa-forward me-2"></span>Pular
             </a>
@@ -31,7 +31,7 @@
                 form="form-revisao"
                 name="btn_proximo"
                 id="btn-salvar-proximo"
-                class="btn btn-primary"
+                class="btn btn-outline-primary"
             >
                 Salvar e Próximo <span class="fas fa-chevron-right ms-2"></span>
             </button>
@@ -171,7 +171,7 @@
                                 />
 
                                 <label
-                                    class="btn w-100 text-center {% if status in revisao.status.all %}btn-primary{% else %}btn-subtle-primary{% endif %}"
+                                    class="btn w-100 text-center {% if status in revisao.status.all %}btn-outline-primary{% else %}btn-subtle-primary{% endif %}"
                                     for="status_{{ status.id }}"
                                 >
                                     {{ status.nome }}
@@ -191,7 +191,7 @@
                         <h5 class="mb-0">Observações</h5>
                         <button
                             type="button"
-                            class="btn btn-sm btn-primary"
+                            class="btn btn-sm btn-outline-primary"
                             data-bs-toggle="modal"
                             data-bs-target="#modalObservacao"
                         >
@@ -463,12 +463,12 @@
                 <div class="modal-footer">
                     <button
                         type="button"
-                        class="btn btn-secondary"
+                        class="btn btn-outline-secondary"
                         data-bs-dismiss="modal"
                     >
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-outline-primary">
                         Salvar Observação
                     </button>
                 </div>
@@ -544,12 +544,12 @@
                 <div class="modal-footer">
                     <button
                         type="button"
-                        class="btn btn-secondary"
+                        class="btn btn-outline-secondary"
                         data-bs-dismiss="modal"
                     >
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-outline-primary">
                         Salvar Alterações
                     </button>
                 </div>
@@ -598,12 +598,12 @@
                 <div class="modal-footer">
                     <button
                         type="button"
-                        class="btn btn-secondary"
+                        class="btn btn-outline-secondary"
                         data-bs-dismiss="modal"
                     >
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-danger">
+                    <button type="submit" class="btn btn-outline-danger">
                         Sim, Excluir
                     </button>
                 </div>
@@ -689,9 +689,9 @@
 
                 if (this.checked) {
                     label.classList.remove("btn-subtle-primary");
-                    label.classList.add("btn-primary");
+                    label.classList.add("btn-outline-primary");
                 } else {
-                    label.classList.remove("btn-primary");
+                    label.classList.remove("btn-outline-primary");
                     label.classList.add("btn-subtle-primary");
                 }
                 
@@ -762,7 +762,7 @@
     btnPlayPause.addEventListener("click", () => {
         isPaused = !isPaused;        
         if (isPaused) {
-            btnPlayPause.classList.replace("btn-subtle-secondary", "btn-warning");
+            btnPlayPause.classList.replace("btn-subtle-secondary", "btn-outline-warning");
             
             // Esconde o wrapper do Pause e mostra o do Play
             wrapperPause.classList.add("d-none");
@@ -770,7 +770,7 @@
             
             display.className = "fw-bold fs-5 font-monospace text-warning";
         } else {
-            btnPlayPause.classList.replace("btn-warning", "btn-subtle-secondary");
+            btnPlayPause.classList.replace("btn-outline-warning", "btn-subtle-secondary");
             
             // Esconde o wrapper do Play e mostra o do Pause
             wrapperPlay.classList.add("d-none");

@@ -1,0 +1,180 @@
+{% extends 'main/base.html' %}
+{% block conteudo %}
+<div class="container-fluid mt-4 px-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">Lançamento DA no GE</h4>
+        <span id="status-badge" class="badge bg-warning text-dark">Aguardando...</span>
+    </div>
+
+    <!-- Progresso -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-baseline mb-1">
+                <span id="processo-atual" class="text-muted small">Iniciando automação...</span>
+                <span id="contagem" class="fw-bold">— / —</span>
+            </div>
+            <div class="progress mb-2" style="height: 28px; border-radius: 6px;">
+                <div id="barra"
+                     class="progress-bar progress-bar-striped progress-bar-animated fw-bold"
+                     role="progressbar"
+                     style="width: 0%; font-size: 0.95rem;">
+                    0%
+                </div>
+            </div>
+            <div class="row text-center text-muted small g-2">
+                <div class="col">
+                    <div>Percentual</div>
+                    <strong id="percentual" class="fs-6">0%</strong>
+                </div>
+                <div class="col">
+                    <div>Decorrido</div>
+                    <strong id="elapsed" class="fs-6">00:00:00</strong>
+                </div>
+                <div class="col">
+                    <div>Restantes</div>
+                    <strong id="restantes" class="fs-6">—</strong>
+                </div>
+                <div class="col">
+                    <div>iter/s</div>
+                    <strong id="iter-s" class="fs-6">—</strong>
+                </div>
+                <div class="col">
+                    <div>s/iter</div>
+                    <strong id="s-iter" class="fs-6">—</strong>
+                </div>
+                <div class="col">
+                    <div>proc/min</div>
+                    <strong id="velocidade" class="fs-6">—</strong>
+                </div>
+                <div class="col">
+                    <div>ETA</div>
+                    <strong id="eta" class="fs-6">--:--:--</strong>
+                </div>
+                <div class="col">
+                    <div>Conclusão às</div>
+                    <strong id="conclusao" class="fs-6">--:--</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span class="fw-semibold">Log</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="limparLog()">Limpar</button>
+        </div>
+        <div id="log"
+             style="height: 420px; overflow-y: auto; font-family: monospace; font-size: 0.82rem; padding: 0.75rem; background: #1e1e1e; color: #d4d4d4; border-radius: 0 0 0.375rem 0.375rem;">
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function formatSegundos(s) {
+        if (!isFinite(s) || s < 0) return '--:--:--';
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = Math.floor(s % 60);
+        return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+    }
+
+    function horaFim(etaSegundos) {
+        if (!isFinite(etaSegundos) || etaSegundos < 0) return '--:--';
+        const fim = new Date(Date.now() + etaSegundos * 1000);
+        return `${pad(fim.getHours())}:${pad(fim.getMinutes())}`;
+    }
+
+    function sinalizarPronto() {
+        document.getElementById('btn-gerencial-wrapper').classList.add('d-none');
+        fetch("{% url 'mppf:progresso_ge_pronto' %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        });
+    }
+
+    function limparLog() {
+        document.getElementById('log').innerHTML = '';
+    }
+
+    function appendLog(texto, cor) {
+        const log = document.getElementById('log');
+        const linha = document.createElement('div');
+        const agora = new Date();
+        const hora = `${pad(agora.getHours())}:${pad(agora.getMinutes())}:${pad(agora.getSeconds())}`;
+        linha.style.color = cor || '#d4d4d4';
+        linha.textContent = `[${hora}] ${texto}`;
+        log.appendChild(linha);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    const source = new EventSource("{% url 'mppf:progresso_ge_stream' %}");
+
+    source.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+
+        if (data.tipo === 'inicio') {
+            document.getElementById('status-badge').className = 'badge bg-primary';
+            document.getElementById('status-badge').textContent = 'Rodando';
+            appendLog(`Iniciando: ${data.total} processos na fila.`, '#4ec9b0');
+        }
+
+        else if (data.tipo === 'progresso') {
+            const pct = Math.round(data.atual / data.total * 100);
+            const barra = document.getElementById('barra');
+            barra.style.width = pct + '%';
+            barra.textContent = pct + '%';
+
+            document.getElementById('percentual').textContent = pct + '%';
+            document.getElementById('contagem').textContent = `${data.atual} / ${data.total}`;
+            document.getElementById('processo-atual').textContent = data.processo;
+            document.getElementById('elapsed').textContent = formatSegundos(data.elapsed);
+            document.getElementById('restantes').textContent = data.total - data.atual;
+            document.getElementById('eta').textContent = formatSegundos(data.eta);
+            document.getElementById('conclusao').textContent = horaFim(data.eta);
+
+            if (data.elapsed > 0 && data.atual > 0) {
+                const iterS = data.atual / data.elapsed;
+                const sIter = data.elapsed / data.atual;
+                document.getElementById('iter-s').textContent = iterS.toFixed(3);
+                document.getElementById('s-iter').textContent = sIter.toFixed(1) + 's';
+                document.getElementById('velocidade').textContent = (iterS * 60).toFixed(1);
+            }
+        }
+
+        else if (data.tipo === 'aguardando_gerencial') {
+            document.getElementById('btn-gerencial-wrapper').classList.remove('d-none');
+            appendLog('Login concluído. Clique no botão quando o escaninho carregar.', '#4ec9b0');
+        }
+
+        else if (data.tipo === 'log') {
+            const cor = data.sucesso === false ? '#f44747' : data.sucesso === true ? '#6a9955' : '#d4d4d4';
+            appendLog(data.mensagem, cor);
+        }
+
+        else if (data.tipo === 'fim') {
+            const barra = document.getElementById('barra');
+            barra.classList.remove('progress-bar-animated', 'progress-bar-striped');
+            barra.classList.add('bg-success');
+            document.getElementById('status-badge').className = 'badge bg-success';
+            document.getElementById('status-badge').textContent = 'Concluído';
+            document.getElementById('processo-atual').textContent = 'Automação encerrada.';
+            document.getElementById('eta').textContent = '00:00:00';
+            document.getElementById('restantes').textContent = '0';
+            appendLog(`Concluído. ${data.total} processos processados.`, '#4ec9b0');
+            source.close();
+        }
+    };
+
+    source.onerror = function () {
+        document.getElementById('status-badge').className = 'badge bg-danger';
+        document.getElementById('status-badge').textContent = 'Erro de conexão';
+        appendLog('Conexão SSE encerrada.', '#f44747');
+        source.close();
+    };
+</script>
+{% endblock %}

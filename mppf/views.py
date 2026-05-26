@@ -1,10 +1,13 @@
 import FreeSimpleGUI as sg
+import json
 import os
-import pyautogui
 import re
 import shutil
+import time
 import timeit
 import traceback
+import threading
+from django.http import StreamingHttpResponse
 from .models import TriagemMPPF, Materia, ExpressaoMateria, ResultadoTriagem, TriagemMateria
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -366,8 +369,43 @@ def realizar_triagem(request, pk):
             return redirect('mppf:realizar_triagem', pk=triagem.id)
         
         elif form_name == "atualizar_materias":
-            triagem.conferir_materias_no_texto()            
+            triagem.conferir_materias_no_texto()
             messages.success(request, "Varredura de matérias concluída com sucesso!")
+            return redirect('mppf:realizar_triagem', pk=triagem.id)
+
+        elif form_name == "baixar_DA":
+            # 1. Tenta sincronizar peças se não há nenhuma DA ainda
+            if not processo.pecas.filter(tipo_peca__sigla="DA").exists():
+                processo.sincronizar_pecas()
+
+            # 2. Baixa as DAs que ainda não têm texto
+            pecas_pendentes = processo.pecas.filter(tipo_peca__sigla="DA", conteudo_texto__isnull=True)
+            baixadas = 0
+            for peca in pecas_pendentes:
+                sucesso, _ = peca.baixar_texto()
+                if sucesso:
+                    baixadas += 1
+
+            # 3. Popula texto_despacho_admissibilidade com todas as DAs que têm conteúdo
+            pecas_com_texto = processo.pecas.filter(
+                tipo_peca__sigla="DA", conteudo_texto__isnull=False
+            ).order_by('data_publicacao')
+
+            if pecas_com_texto.exists():
+                textos = []
+                for peca in pecas_com_texto:
+                    cabecalho = f"--- DA (Cód: {peca.cod_peca} - {peca.data_publicacao.strftime('%d/%m/%Y')}) ---"
+                    textos.append(f"{cabecalho}\n{peca.conteudo_texto}")
+                triagem.texto_despacho_admissibilidade = corrige_texto_pdf(
+                    texto="\n\n".join(textos)
+                )
+                triagem.atualizar_paginas()
+                triagem.conferir_materias_no_texto()
+                triagem.save()
+                suffix = f" ({baixadas} baixada(s) agora)" if baixadas else " (texto já estava no banco)"
+                messages.success(request, f"Texto da DA atualizado.{suffix}")
+            else:
+                messages.warning(request, "Nenhuma DA com texto encontrada. Verifique se as peças estão sincronizadas.")
             return redirect('mppf:realizar_triagem', pk=triagem.id)
 
         return redirect('mppf:realizar_triagem', pk=triagem.id)
@@ -440,60 +478,116 @@ def realizar_triagem(request, pk):
 
 
 def lanca_DA_no_GE_semiauto(request):
-    processos = criada_minuta_GE()
-    total = processos.count()
-    gebot = GEBot()
-    
+    from .services.progresso import iniciar, esta_rodando
+
+    if esta_rodando():
+        return redirect('mppf:progresso_ge')
+
+    processos = list(
+        criada_minuta_GE().select_related('classe', 'triagem_mppf')
+    )
+    iniciar()
+    threading.Thread(
+        target=_rodar_automacao_ge,
+        args=(processos,),
+        daemon=True,
+    ).start()
+    return redirect('mppf:progresso_ge')
+
+
+def _rodar_automacao_ge(processos):
+    import pythoncom
+    from .services.progresso import push, finalizar
+
+    # COM (win32com/Word) exige inicialização explícita em threads não-principais
+    pythoncom.CoInitialize()
+
+    total = len(processos)
+    push({'tipo': 'inicio', 'total': total})
+
+    def _log_sse(msg, sucesso=None):
+        push({'tipo': 'log', 'mensagem': msg, 'sucesso': sucesso})
+
+    gebot = GEBot(log_fn=_log_sse)
     try:
         gebot.login()
     except Exception as e:
-        print(f"Falha crítica no login do GEBot: {e}")
-        sg.PopupError("Erro no login. A automação não pôde ser iniciada.")
-        return redirect('index')
+        push({'tipo': 'log', 'mensagem': f'ERRO no login: {e}', 'sucesso': False})
+        finalizar()
+        return
 
-    print(gebot.lista_exclusao())
+    push({'tipo': 'log', 'mensagem': 'Escaninho pronto. Iniciando consultas...', 'sucesso': True})
+    inicio = time.monotonic()
+    exclusao = gebot.lista_exclusao()
+    print(exclusao)
     print(total)
-    
-    for i, processo in enumerate(processos, start=1):
-        # A barra de progresso é atualizada independentemente de erro ou sucesso
-        sg.OneLineProgressMeter(
-            "MPPF GE",
-            current_value=i,
-            max_value=total,
-            orientation="h",
-            keep_on_top=True,
-        )
-        if i == 1:
-            pyautogui.alert('Mude a posição da barra de progresso.')
-            
-        print(f"Iniciando: {processo.classe} - {processo.numero}")
-        
-        if processo.numero not in gebot.lista_exclusao():
-            try:
-                # Tenta executar o fluxo normal
-                gebot.seleciona_processo(numero=processo.numero)
-                sucesso = gebot.lanca_DA()
-                
-                if not sucesso:
-                    print(f"Aviso: Fluxo interrompido (DA não inserida) para o processo {processo.numero}")
-            
-            except Exception as e:
-                # Captura qualquer erro do Selenium, PyAutoGUI ou lógica do bot
-                print(f"ERRO ao processar {processo.numero}: {e}")
-                traceback.print_exc() # Imprime o erro no console para você debugar depois
-                
-                # --- RECUPERAÇÃO DE ESTADO (Fail-Safe) ---
-                # Como a automação falhou no meio do caminho, a tela pode ter ficado 
-                # "suja" (ex: uma janela modal do GE aberta, ou o Word travado na frente).
-                # É crucial tentar resetar a tela para que o próximo processo não falhe também.
-                try:
-                    # Tenta voltar para a tela inicial gerencial do GE
-                    gebot.driver.get(gebot.URL_GERENCIAL)
-                    
-                    # Opcional: Adicione um hotkey para garantir que o Word não fique travando a tela
-                    # pyautogui.hotkey('alt', 'f4') 
-                except Exception as recovery_error:
-                    print(f"Falha ao tentar recuperar o estado da tela: {recovery_error}")
 
-        
-    return redirect('mppf:kanban_triagem')
+    for i, processo in enumerate(processos, start=1):
+        elapsed = time.monotonic() - inicio
+        eta = (elapsed / i) * (total - i) if i > 1 else 0
+        push({
+            'tipo': 'progresso',
+            'atual': i,
+            'total': total,
+            'processo': f'{processo.classe} - {processo.numero}',
+            'elapsed': elapsed,
+            'eta': eta,
+        })
+        print(f"Iniciando: {processo.classe} - {processo.numero}")
+
+        if processo.numero in exclusao:
+            push({'tipo': 'log', 'mensagem': f'Pulado (exclusão): {processo.numero}'})
+            continue
+
+        try:
+            gebot.seleciona_processo(numero=processo.numero)
+            sucesso = gebot.lanca_DA(processo=processo)
+            if sucesso:
+                push({'tipo': 'log', 'mensagem': f'DA lançada: {processo.numero}', 'sucesso': True})
+            else:
+                push({'tipo': 'log', 'mensagem': f'Falhou (DA não inserida): {processo.numero}', 'sucesso': False})
+
+        except Exception as e:
+            print(f"ERRO ao processar {processo.numero}: {e}")
+            traceback.print_exc()
+            push({'tipo': 'log', 'mensagem': f'ERRO: {processo.numero} — {e}', 'sucesso': False})
+            try:
+                gebot.driver.get(gebot.URL_GERENCIAL)
+            except Exception as recovery_error:
+                print(f"Falha ao recuperar estado: {recovery_error}")
+
+    push({'tipo': 'fim', 'total': total})
+    finalizar()
+    pythoncom.CoUninitialize()
+
+
+def progresso_ge(request):
+    return render(request, 'mppf/progresso_ge.html')
+
+
+def progresso_ge_pronto(request):
+    from .services.progresso import sinalizar_gerencial_pronto
+    from django.http import JsonResponse
+    sinalizar_gerencial_pronto()
+    return JsonResponse({'ok': True})
+
+
+def progresso_ge_stream(request):
+    from .services.progresso import get_fila
+
+    def stream():
+        fila = get_fila()
+        while True:
+            try:
+                evento = fila.get(timeout=25)
+                if evento is None:
+                    yield f'data: {json.dumps({"tipo": "fim", "total": 0})}\n\n'
+                    break
+                yield f'data: {json.dumps(evento)}\n\n'
+            except Exception:
+                yield ': keepalive\n\n'
+
+    response = StreamingHttpResponse(stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'
+    return response

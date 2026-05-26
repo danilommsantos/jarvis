@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, time as dt_time, timedelta
 from django.db.models import Count, Q, Case, When, Value, IntegerField, Max, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone

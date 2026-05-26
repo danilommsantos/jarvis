@@ -3,6 +3,7 @@ from django.contrib import messages
 from .services.downloader import baixar_planilha_acervo
 from .services.importer import processar_atualizacao_acervo
 from .models import Processo, Peca
+from mppf.services.corrige_copia_pdf import corrige_texto_pdf
 import FreeSimpleGUI as sg
 from icecream import ic
 
@@ -35,8 +36,12 @@ def lista_processos(request):
 
 
 def atualizar_json_processos(request):
+    tudo = request.GET.get('tudo') == '1'
     processos = Processo.objects.filter(esta_no_acervo=True)
-    total = processos.count()    
+    if not tudo:
+        # apenas processos que ainda não têm peças sincronizadas
+        processos = processos.filter(pecas__isnull=True)
+    total = processos.count()
     for i, processo in enumerate(processos, start=1):
         sucesso, mensagem = processo.sincronizar_pecas()
         print(mensagem)
@@ -77,20 +82,52 @@ def baixar_texto(request, pk):
 
 
 def baixar_texto_DA_AIRRs(request):
-    # 1. Procura o processo
+    tudo = request.GET.get('tudo') == '1'
     processos = Processo.objects.filter(
-        classe__nome="AIRR", 
+        classe__nome="AIRR",
         esta_no_acervo=True,
-        responsavel__nome_completo = "Danilo Monteiro De Melo Santos",
-        )
-    total = processos.count()    
+        responsavel__nome_completo="Danilo Monteiro De Melo Santos",
+    )
+    total = processos.count()
     for i, processo in enumerate(processos, start=1):
         ic(processo.numero)
-        pecas = processo.pecas.filter(tipo_peca__sigla="DA", conteudo_texto__isnull=False)
+
+        # Se não tem peças, tenta sincronizar o JSON antes de baixar a DA
+        if not processo.pecas.exists():
+            ic('JSON não encontrado, sincronizando peças...')
+            processo.sincronizar_pecas()
+
+        if tudo:
+            pecas = processo.pecas.filter(tipo_peca__sigla="DA")
+        else:
+            # apenas DAs que ainda não tiveram o texto baixado
+            pecas = processo.pecas.filter(tipo_peca__sigla="DA", conteudo_texto__isnull=True)
+
         ic(pecas.count())
         for peca in pecas:
             peca.baixar_texto()
             peca.save()
+
+        # Popula texto_despacho_admissibilidade somente se ainda estiver vazio
+        try:
+            triagem = processo.triagem_mppf
+            if not triagem.texto_despacho_admissibilidade:
+                pecas_com_texto = processo.pecas.filter(
+                    tipo_peca__sigla="DA", conteudo_texto__isnull=False
+                ).order_by('data_publicacao')
+                if pecas_com_texto.exists():
+                    textos = []
+                    for peca in pecas_com_texto:
+                        cabecalho = f"--- DA (Cód: {peca.cod_peca} - {peca.data_publicacao.strftime('%d/%m/%Y')}) ---"
+                        textos.append(f"{cabecalho}\n{peca.conteudo_texto}")
+                    triagem.texto_despacho_admissibilidade = corrige_texto_pdf(
+                        texto="\n\n".join(textos)
+                    )
+                    triagem.atualizar_paginas()
+                    triagem.save()
+        except Exception:
+            pass  # Processo sem triagem MPPF — ignora
+
         sg.one_line_progress_meter('baixar_texto_DA_AIRRs', i, total, orientation='h')
     messages.success(request, f"Sucesso: foram atualizados {total} processos.")
     return redirect('lista_processos')

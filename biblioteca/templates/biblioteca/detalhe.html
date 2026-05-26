@@ -91,7 +91,7 @@
               </a>
               <form class="form-marcar-lido" method="post" action="{% url 'biblioteca:marcar_lido' doc.slug %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-sm {% if doc.lido %}btn-success{% else %}btn-primary{% endif %}">
+                <button type="submit" class="btn btn-sm {% if doc.lido %}btn-outline-success{% else %}btn-outline-primary{% endif %}">
                   {% if doc.lido %}✓ Lido — desmarcar{% else %}Marcar como lido{% endif %}
                 </button>
               </form>
@@ -135,7 +135,7 @@
            class="btn btn-phoenix-secondary btn-sm">← Voltar</a>
         <form class="form-marcar-lido" method="post" action="{% url 'biblioteca:marcar_lido' doc.slug %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-sm {% if doc.lido %}btn-success{% else %}btn-primary{% endif %}">
+          <button type="submit" class="btn btn-sm {% if doc.lido %}btn-outline-success{% else %}btn-outline-primary{% endif %}">
             {% if doc.lido %}✓ Já lido — desmarcar{% else %}Marcar como lido{% endif %}
           </button>
         </form>
@@ -173,7 +173,7 @@
     </div>
   </div>
   <div class="d-flex justify-content-end">
-    <button id="rdr-toggle" class="btn btn-primary rounded-pill shadow-sm px-3"
+    <button id="rdr-toggle" class="btn btn-outline-primary rounded-pill shadow-sm px-3"
             style="font-size:.85rem;" title="Configurações de leitura">
       <i class="fa-solid fa-text-height me-1"></i>Leitura
     </button>
@@ -209,7 +209,7 @@
     document.getElementById('rdr-val').textContent = fs + 'pt';
     document.querySelectorAll('.rdr-lh').forEach(function (b) {
       var on = parseFloat(b.dataset.lh) === lh;
-      b.classList.toggle('btn-primary', on);
+      b.classList.toggle('btn-outline-primary', on);
       b.classList.toggle('btn-phoenix-secondary', !on);
     });
   }
@@ -218,7 +218,7 @@
   function applyDark() {
     body.classList.toggle('modo-escuro', dark);
     var btn = document.getElementById('rdr-dk');
-    btn.classList.toggle('btn-primary', dark);
+    btn.classList.toggle('btn-outline-primary', dark);
     btn.classList.toggle('btn-phoenix-secondary', !dark);
   }
 
@@ -251,7 +251,7 @@
     document.getElementById('rdr-footer').style.display = 'none';
     var btn = document.getElementById('rdr-pag-btn');
     btn.classList.remove('btn-phoenix-secondary');
-    btn.classList.add('btn-primary');
+    btn.classList.add('btn-outline-primary');
     setTimeout(function () {
       calcPages();
       var saved = parseInt(localStorage.getItem(LS_PG)) || 0;
@@ -266,7 +266,7 @@
     document.getElementById('rdr-pag-nav').style.display = 'none';
     document.getElementById('rdr-footer').style.display = '';
     var btn = document.getElementById('rdr-pag-btn');
-    btn.classList.remove('btn-primary');
+    btn.classList.remove('btn-outline-primary');
     btn.classList.add('btn-phoenix-secondary');
   }
 
@@ -336,7 +336,7 @@
       .then(function (d) {
         document.querySelectorAll('.form-marcar-lido button').forEach(function (btn) {
           btn.textContent = d.lido ? '✓ Lido — desmarcar' : 'Marcar como lido';
-          btn.className = 'btn btn-sm ' + (d.lido ? 'btn-success' : 'btn-primary');
+          btn.className = 'btn btn-sm ' + (d.lido ? 'btn-outline-success' : 'btn-outline-primary');
         });
         var badge = document.getElementById('lido-badge');
         if (badge) {

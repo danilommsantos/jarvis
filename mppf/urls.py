@@ -10,6 +10,9 @@ urlpatterns = [
     path('triar/<int:pk>/', views.realizar_triagem, name='realizar_triagem'),
     path('lancar_fluxo_lote/', views.lancar_fluxo_lote, name='lancar_fluxo_lote'),
     path('lanca_DA_no_GE_semiauto/', views.lanca_DA_no_GE_semiauto, name='lanca_DA_no_GE_semiauto'),
+    path('progresso-ge/', views.progresso_ge, name='progresso_ge'),
+    path('progresso-ge/stream/', views.progresso_ge_stream, name='progresso_ge_stream'),
+    path('progresso-ge/pronto/', views.progresso_ge_pronto, name='progresso_ge_pronto'),
     path('relatorios/nao-fazer/', views.relatorio_nao_fazer, name='relatorio_nao_fazer'),
     path('relatorios/aguardando-triagem/', views.relatorio_aguardando_triagem, name='relatorio_aguardando_triagem'),
 ]

@@ -39,24 +39,24 @@
                 <span class="fas fa-chart-bar"></span>
             </a>
             <a href="{% url 'pautas:proxima_revisao' pauta.pk %}"
-               class="btn btn-primary btn-icon"
+               class="btn btn-outline-primary btn-icon"
                data-bs-toggle="tooltip" title="Revisar">
                 <span class="fas fa-play"></span>
             </a>
             <button type="button"
-                    class="btn btn-success btn-icon"
+                    class="btn btn-outline-success btn-icon"
                     data-bs-toggle="tooltip" title="Marcar RR Provido"
                     onclick="new bootstrap.Modal(document.getElementById('modalMarcarRR')).show()">
                 <span class="fas fa-check-double"></span>
             </button>
             <button type="button"
-                    class="btn btn-warning btn-icon"
+                    class="btn btn-outline-warning btn-icon"
                     data-bs-toggle="tooltip" title="Mover Processos"
                     onclick="new bootstrap.Modal(document.getElementById('modalMoverProcessos')).show()">
                 <span class="fas fa-exchange-alt"></span>
             </button>
             <button type="button"
-                    class="btn btn-primary btn-icon"
+                    class="btn btn-outline-primary btn-icon"
                     data-bs-toggle="tooltip" title="Adicionar Processo"
                     onclick="new bootstrap.Modal(document.getElementById('modalAdicionarProcesso')).show()">
                 <span class="fas fa-plus"></span>
@@ -293,7 +293,7 @@
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="submit" name="btn_marcar_rr" class="btn btn-success">
+                    <button type="submit" name="btn_marcar_rr" class="btn btn-outline-success">
                         Marcar Processos
                     </button>
                 </div>
@@ -356,7 +356,7 @@
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="submit" name="btn_adicionar_lote" class="btn btn-primary">
+                    <button type="submit" name="btn_adicionar_lote" class="btn btn-outline-primary">
                         Processar e Adicionar
                     </button>
                 </div>
@@ -399,7 +399,7 @@
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         Cancelar
                     </button>
-                    <button type="submit" name="btn_mover_processos" class="btn btn-warning">
+                    <button type="submit" name="btn_mover_processos" class="btn btn-outline-warning">
                         Mover Processos
                     </button>
                 </div>
