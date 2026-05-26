@@ -4,6 +4,21 @@ from django.urls import reverse, NoReverseMatch
 
 register = template.Library()
 
+
+@register.filter
+def formatar_tempo(segundos):
+    if not segundos:
+        return '—'
+    s = int(segundos)
+    dias, s = divmod(s, 86400)
+    horas, s = divmod(s, 3600)
+    minutos, segs = divmod(s, 60)
+    if dias > 0:
+        return f"{dias}d {horas:02}:{minutos:02}:{segs:02}"
+    if horas > 0:
+        return f"{horas:02}:{minutos:02}:{segs:02}"
+    return f"{minutos:02}:{segs:02}"
+
 def resolver_url(valor):
     try:
         return reverse(valor)

@@ -1,0 +1,129 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<div class="pb-5">
+  <div class="row g-4">
+    <div class="col-12">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb fs--1">
+          <li class="breadcrumb-item"><a href="{% url 'pautas:lista_pautas' %}">Pautas</a></li>
+          {% if pauta %}
+          <li class="breadcrumb-item"><a href="{% url 'pautas:pauta' pauta.pk %}">{{ pauta.titulo }}</a></li>
+          {% endif %}
+          <li class="breadcrumb-item active">Estatísticas</li>
+        </ol>
+      </nav>
+
+      <!-- Header -->
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+          <h2 class="mb-0 text-900">{{ titulo }}</h2>
+          <p class="text-700 mb-0">Média e desvio padrão por tipo de resultado · posição de cada servidor</p>
+        </div>
+        <div class="d-flex gap-2">
+          {% if pauta %}
+          <a href="{% url 'pautas:relatorio_estatisticas' %}" class="btn btn-phoenix-secondary btn-sm">
+            Ver relatório geral
+          </a>
+          <a href="{% url 'pautas:pauta' pauta.pk %}" class="btn btn-phoenix-secondary btn-sm">← Voltar</a>
+          {% else %}
+          <a href="{% url 'pautas:lista_pautas' %}" class="btn btn-phoenix-secondary btn-sm">← Pautas</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not estatisticas %}
+      <div class="card shadow-none border border-300">
+        <div class="card-body text-center py-5 text-700">
+          Nenhum dado disponível{% if pauta %} para esta pauta{% endif %}.
+        </div>
+      </div>
+      {% endif %}
+
+      {% for item in estatisticas %}
+      <div class="card shadow-none border border-300 mb-4">
+        <div class="card-header border-bottom border-300 py-3">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0 text-900">{{ item.status.nome }}</h5>
+            <div class="d-flex gap-3 fs--1 text-700">
+              <span>
+                Média: <strong class="text-900">{{ item.media }}</strong>
+              </span>
+              <span>
+                Desvio padrão: <strong class="text-900">{{ item.desvio }}</strong>
+              </span>
+              <span>
+                Faixa ±1DP:
+                <strong class="text-900">{{ item.lim_inf }} – {{ item.lim_sup }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive scrollbar">
+            <table class="table table-sm fs--1 mb-0">
+              <thead>
+                <tr>
+                  <th class="ps-4">Servidor (minutante)</th>
+                  <th class="text-center" style="width:100px;">Total</th>
+                  <th class="text-center" style="width:140px;">Posição</th>
+                  <th class="pe-4">Barra</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in item.minutantes %}
+                <tr>
+                  <td class="ps-4 py-2 fw-semibold text-900">
+                    {{ m.minutante.nome_completo|default:m.minutante.inicial }}
+                  </td>
+                  <td class="text-center py-2 text-700">{{ m.total }}</td>
+                  <td class="text-center py-2">
+                    {% if m.posicao == 'acima' %}
+                      <span class="badge badge-phoenix badge-phoenix-danger">Acima ↑</span>
+                    {% elif m.posicao == 'abaixo' %}
+                      <span class="badge badge-phoenix badge-phoenix-warning">Abaixo ↓</span>
+                    {% else %}
+                      <span class="badge badge-phoenix badge-phoenix-success">Dentro ✓</span>
+                    {% endif %}
+                  </td>
+                  <td class="pe-4 py-2">
+                    {% if item.lim_sup > 0 %}
+                    {% widthratio m.total item.lim_sup 100 as pct %}
+                    <div class="progress" style="height:6px; max-width:200px;">
+                      <div class="progress-bar
+                        {% if m.posicao == 'acima' %}bg-danger
+                        {% elif m.posicao == 'abaixo' %}bg-warning
+                        {% else %}bg-success{% endif %}"
+                        style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%">
+                      </div>
+                    </div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-700">Sem dados</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="border-top border-300">
+                <tr class="text-700 fs--2">
+                  <td class="ps-4 py-2">Referência (média ± 1DP)</td>
+                  <td class="text-center py-2">{{ item.media }}</td>
+                  <td></td>
+                  <td class="pe-4 py-2 text-700">
+                    {{ item.lim_inf }} – {{ item.lim_sup }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+</div>
+{% endblock conteudo %}

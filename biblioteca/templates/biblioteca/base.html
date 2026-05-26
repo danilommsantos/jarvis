@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html data-navigation-type="default" data-navbar-horizontal-shape="default" lang="pt-BR" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Biblioteca{% endblock %} | Jarvis</title>
+
+  <script src="{% static 'biblioteca/phoenix/vendors/imagesloaded/imagesloaded.pkgd.min.js' %}"></script>
+  <script src="{% static 'biblioteca/phoenix/vendors/simplebar/simplebar.min.js' %}"></script>
+  <script src="{% static 'biblioteca/phoenix/assets/js/config.js' %}"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+  <link href="{% static 'biblioteca/phoenix/vendors/simplebar/simplebar.min.css' %}" rel="stylesheet">
+  <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
+  <link href="{% static 'biblioteca/phoenix/assets/css/theme-rtl.min.css' %}" rel="stylesheet" id="style-rtl" disabled>
+  <link href="{% static 'biblioteca/phoenix/assets/css/theme.min.css' %}" rel="stylesheet" id="style-default">
+  <link href="{% static 'biblioteca/phoenix/assets/css/user.min.css' %}" rel="stylesheet" id="user-style-default">
+
+  <script>
+    var phoenixIsRTL = window.config.config.phoenixIsRTL;
+    if (phoenixIsRTL) {
+      document.getElementById('style-default').setAttribute('disabled', true);
+      document.getElementById('user-style-default').setAttribute('disabled', true);
+      document.querySelector('html').setAttribute('dir', 'rtl');
+    }
+  </script>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+<main class="main" id="top">
+
+  <!-- ── SIDEBAR ────────────────────────────────────────────────────── -->
+  <nav class="navbar navbar-vertical navbar-expand-lg">
+    <script>
+      var navbarStyle = window.config.config.phoenixNavbarStyle;
+      if (navbarStyle && navbarStyle !== 'transparent') {
+        document.querySelector('body').classList.add('navbar-' + navbarStyle);
+      }
+    </script>
+
+    <div class="collapse navbar-collapse" id="navbarVerticalCollapse">
+      <div class="navbar-vertical-content">
+        <ul class="navbar-nav flex-column" id="navbarVerticalNav">
+
+          <li class="nav-item">
+            <div class="nav-item-wrapper">
+              <a class="nav-link label-1 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                 href="{% url 'biblioteca:dashboard' %}">
+                <div class="d-flex align-items-center">
+                  <span class="nav-link-icon"><span data-feather="home"></span></span>
+                  <span class="nav-link-text-wrapper"><span class="nav-link-text">Dashboard</span></span>
+                </div>
+              </a>
+            </div>
+          </li>
+
+          <li class="nav-item">
+            <div class="nav-item-wrapper">
+              <a class="nav-link label-1 {% if request.resolver_match.url_name == 'lista' and not request.GET.categoria %}active{% endif %}"
+                 href="{% url 'biblioteca:lista' %}">
+                <div class="d-flex align-items-center">
+                  <span class="nav-link-icon"><span data-feather="book-open"></span></span>
+                  <span class="nav-link-text-wrapper"><span class="nav-link-text">Todos os Documentos</span></span>
+                </div>
+              </a>
+            </div>
+          </li>
+
+          {% if categorias %}
+          <li class="nav-item">
+            <p class="navbar-vertical-label">Categorias</p>
+            <hr class="navbar-vertical-line">
+            {% for cat in categorias %}
+            <div class="nav-item-wrapper">
+              <a class="nav-link label-1 {% if request.GET.categoria == cat.slug %}active{% endif %}"
+                 href="{% url 'biblioteca:lista' %}?categoria={{ cat.slug }}">
+                <div class="d-flex align-items-center">
+                  <span class="nav-link-icon"><span data-feather="folder"></span></span>
+                  <span class="nav-link-text-wrapper"><span class="nav-link-text">{{ cat.nome }}</span></span>
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+          </li>
+          {% endif %}
+
+          <li class="nav-item">
+            <p class="navbar-vertical-label">Sistema</p>
+            <hr class="navbar-vertical-line">
+            <div class="nav-item-wrapper">
+              <a class="nav-link label-1" href="{% url 'admin:biblioteca_documento_changelist' %}">
+                <div class="d-flex align-items-center">
+                  <span class="nav-link-icon"><span data-feather="settings"></span></span>
+                  <span class="nav-link-text-wrapper"><span class="nav-link-text">Admin Django</span></span>
+                </div>
+              </a>
+            </div>
+          </li>
+
+        </ul>
+      </div>
+    </div>
+
+    <div class="navbar-vertical-footer">
+      <button class="btn navbar-vertical-toggle border-0 fw-semibold w-100 white-space-nowrap d-flex align-items-center">
+        <span class="uil uil-left-arrow-to-left fs-8"></span>
+        <span class="uil uil-arrow-from-right fs-8"></span>
+        <span class="navbar-vertical-footer-text ms-2">Recolher menu</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── TOP NAVBAR ───────────────────────────────────────────────────── -->
+  <nav class="navbar navbar-top fixed-top navbar-expand" id="navbarDefault">
+    <div class="collapse navbar-collapse justify-content-between">
+      <div class="navbar-logo">
+        <button class="btn navbar-toggler navbar-toggler-humburger-icon hover-bg-transparent"
+                type="button" data-bs-toggle="collapse" data-bs-target="#navbarVerticalCollapse"
+                aria-controls="navbarVerticalCollapse" aria-expanded="false" aria-label="Toggle Navigation">
+          <span class="navbar-toggle-icon"><span class="toggle-line"></span></span>
+        </button>
+        <a class="navbar-brand me-1 me-sm-3" href="{% url 'biblioteca:dashboard' %}">
+          <div class="d-flex align-items-center">
+            <span data-feather="book" style="height:20px;width:20px;" class="text-primary"></span>
+            <p class="logo-text ms-2 d-none d-sm-block">Biblioteca</p>
+          </div>
+        </a>
+      </div>
+
+      <ul class="navbar-nav navbar-nav-icons flex-row align-items-center gap-1">
+        <li class="nav-item">
+          <div class="theme-control-toggle fa-icon-wait px-2">
+            <input class="form-check-input ms-0 theme-control-toggle-input" type="checkbox"
+                   data-theme-control="phoenixTheme" value="dark" id="themeControlToggle">
+            <label class="mb-0 theme-control-toggle-label theme-control-toggle-light"
+                   for="themeControlToggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Modo escuro">
+              <span class="icon" data-feather="moon" style="height:16px;width:16px;"></span>
+            </label>
+            <label class="mb-0 theme-control-toggle-label theme-control-toggle-dark"
+                   for="themeControlToggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Modo claro">
+              <span class="icon" data-feather="sun" style="height:16px;width:16px;"></span>
+            </label>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ── CONTENT ──────────────────────────────────────────────────────── -->
+  <div class="content">
+    <div class="pb-5">
+
+      {% if messages %}
+      <div class="container-fluid pt-3 px-4">
+        {% for msg in messages %}
+        <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+
+    </div>
+
+    <footer class="footer position-absolute">
+      <div class="row g-0 justify-content-between align-items-center h-100">
+        <div class="col-12 col-sm-auto text-center">
+          <p class="mb-0 mt-2 mt-sm-0 text-body">Biblioteca de Leitura &mdash; Jarvis</p>
+        </div>
+        <div class="col-12 col-sm-auto text-center">
+          <p class="mb-0 text-body-tertiary text-opacity-85">Phoenix v1.14.0</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+</main>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────────────────── -->
+<script src="{% static 'biblioteca/phoenix/vendors/popper/popper.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/bootstrap/bootstrap.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/anchorjs/anchor.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/is/is.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/fontawesome/all.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/lodash/lodash.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/feather-icons/feather.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/list.js/list.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/vendors/dayjs/dayjs.min.js' %}"></script>
+<script src="{% static 'biblioteca/phoenix/assets/js/phoenix.js' %}"></script>
+
+<script>
+  var navbarTopStyle = window.config.config.phoenixNavbarTopStyle;
+  var navbarTop = document.querySelector('.navbar-top');
+  if (navbarTopStyle === 'darker') navbarTop.setAttribute('data-navbar-appearance', 'darker');
+
+  var navbarVerticalStyle = window.config.config.phoenixNavbarVerticalStyle;
+  var navbarVertical = document.querySelector('.navbar-vertical');
+  if (navbarVertical && navbarVerticalStyle === 'darker') {
+    navbarVertical.setAttribute('data-navbar-appearance', 'darker');
+  }
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

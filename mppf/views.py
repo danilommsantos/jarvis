@@ -2,6 +2,7 @@ import FreeSimpleGUI as sg
 import os
 import pyautogui
 import re
+import shutil
 import timeit
 import traceback
 from .models import TriagemMPPF, Materia, ExpressaoMateria, ResultadoTriagem, TriagemMateria
@@ -31,11 +32,11 @@ def kanban_triagem(request):
         },
         {
             'nome': 'Triar',
-            'processos': triar(),
+            'processos': triar().order_by('qtd_recursos', 'id'),
         },
         {
             'nome': 'PDF',
-            'processos': triar_com_pdf(),
+            'processos': triar_com_pdf().order_by('qtd_recursos', 'id'),
         },
         {
             'nome': 'Triados',
@@ -235,11 +236,12 @@ def lancar_fluxo_lote(request):
 ########################################
 # Triagen                              #
 ########################################
-def realizar_triagem(request, pk):
-    print('#'*80)
-    print('realizar_triagem')
+def realizar_triagem(request, pk):    
+    largura = shutil.get_terminal_size().columns
     triagem = get_object_or_404(TriagemMPPF, id=pk)
     processo = triagem.processo
+    print(f" {processo.fase_completa} - {processo.numero} ".center(largura, "#"))
+    print('realizar_triagem')
     
     abre_pdf_do_processo(processo=processo, pasta_processos='D://Processos')
     triagem.texto_despacho_admissibilidade = corrige_texto_pdf(texto=triagem.texto_despacho_admissibilidade)

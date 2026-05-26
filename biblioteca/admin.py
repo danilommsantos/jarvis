@@ -120,13 +120,13 @@ class DocumentoAdmin(admin.ModelAdmin):
         if obj.lido:
             label = f'✓ {obj.data_leitura.strftime("%d/%m/%y") if obj.data_leitura else "Sim"}'
             return format_html('<span style="color:#2e7d32;font-weight:bold">{}</span>', label)
-        return format_html('<span style="color:#bbb">—</span>')
+        return mark_safe('<span style="color:#bbb">—</span>')
 
     @admin.display(description='GitHub')
     def publicado_badge(self, obj):
         if obj.publicado_github:
-            return format_html('<span style="color:#1565c0;font-weight:bold">✓</span>')
-        return format_html('<span style="color:#ddd">—</span>')
+            return mark_safe('<span style="color:#1565c0;font-weight:bold">✓</span>')
+        return mark_safe('<span style="color:#ddd">—</span>')
 
     @admin.display(description='Preview')
     def preview_conteudo(self, obj):
@@ -167,8 +167,8 @@ class SyncLogAdmin(admin.ModelAdmin):
     @admin.display(description='Status')
     def status_erros(self, obj):
         if obj.erros:
-            return format_html('<span style="color:#c62828">⚠ Com erros</span>')
-        return format_html('<span style="color:#2e7d32">✓ OK</span>')
+            return mark_safe('<span style="color:#c62828">⚠ Com erros</span>')
+        return mark_safe('<span style="color:#2e7d32">✓ OK</span>')
 
     def has_add_permission(self, request):
         return False

@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import statistics as stat_lib
 import pyperclip
 
 import FreeSimpleGUI as sg
@@ -10,7 +11,7 @@ from nup_poder_judiciario import NumeroUnicoProcesso as nup
 from scipy import stats
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Count, F, Window, Q, Prefetch
+from django.db.models import Count, F, Window, Q, Prefetch, Sum, ExpressionWrapper, IntegerField
 from django.db.models.functions import Rank
 from django.contrib import messages # Importe o sistema de mensagens
 from django.utils import timezone
@@ -21,14 +22,25 @@ from .services.docx_service import DocxService
 from .services.automation import abre_voto_ge, abre_voto_pasta_pauta
 
 from main.utils.utils import formatar_tempo, buscar_pecas_btv
-from processos.models import Processo, Classe
+from processos.models import Processo, Classe, Responsavel
 from processos.services.parser import formatar_numero_processo
 
 
 def lista_pautas(request):
     pautas = Pauta.objects.annotate(
-        total_processos=Count('revisoes')
-    ).all()
+        total_processos=Count('revisoes', distinct=True),
+        total_revisados=Count(
+            'revisoes',
+            filter=Q(revisoes__status__eh_revisado=True),
+            distinct=True,
+        ),
+        tempo_total=Sum('revisoes__tempo_gasto'),
+    ).annotate(
+        total_pendentes=ExpressionWrapper(
+            F('total_processos') - F('total_revisados'),
+            output_field=IntegerField(),
+        )
+    ).order_by('-data_inicio')
     context = {
         'pautas': pautas,
     }
@@ -177,30 +189,39 @@ def pauta(request, pk):
                 return redirect('pautas:pauta', pk=pauta.pk)
 
 
-    revisoes = pauta.revisoes.ordenar_pela_prioridade().select_related(
-    'processo', 'minutante'
+    revisoes = pauta.revisoes.ordenar_pela_prioridade().annotate(
+        num_anotacoes=Count('observacoes', distinct=True)
+    ).select_related(
+        'processo', 'minutante'
     ).prefetch_related(
-        # Traz apenas os atendimentos DESTA pauta
         Prefetch(
             'processo__atendimentos',
             queryset=AtendimentoAdvogado.objects.filter(pauta=pauta)
         ),
-        # Traz apenas os memoriais DESTA pauta
         Prefetch(
             'processo__memoriais',
             queryset=Memorial.objects.filter(pauta=pauta)
         )
     )
-    
+
     total_processos = revisoes.count()
+    total_revisados = pauta.revisoes.filter(
+        rr_provido=False, status__eh_revisado=True
+    ).distinct().count()
+    total_faltam = total_processos - total_revisados
+    pct_revisados = round(total_revisados / total_processos * 100) if total_processos else 0
+
     relatorio_classes = revisoes.values('processo__classe__nome').annotate(total=Count('id')).order_by('-total')
     relatorio_status = revisoes.values('status__nome').annotate(total=Count('id')).order_by('-total')
     relatorio_minutante = revisoes.values('minutante__inicial', 'minutante__nome_completo', 'minutante__user__first_name').annotate(total=Count('id')).order_by('-total')
-    
+
     context = {
         'pauta': pauta,
         'revisoes': revisoes,
         'total_processos': total_processos,
+        'total_revisados': total_revisados,
+        'total_faltam': total_faltam,
+        'pct_revisados': pct_revisados,
         'relatorio_classes': relatorio_classes,
         'relatorio_status': relatorio_status,
         'relatorio_minutante': relatorio_minutante,
@@ -481,3 +502,293 @@ def relatorio_observacoes(request, pk):
         'revisoes': revisoes,
     }
     return render(request, 'pautas/relatorio_observacoes.html', context)
+
+
+def _calcular_estatisticas_status(revisoes_qs):
+    from collections import defaultdict
+
+    minutantes = list(
+        Responsavel.objects.filter(
+            revisoes_minutadas__in=revisoes_qs
+        ).distinct().order_by('nome_completo')
+    )
+
+    if not minutantes:
+        return []
+
+    status_tipos = list(StatusRevisao.objects.filter(ativo=True).order_by('nome'))
+
+    raw = revisoes_qs.filter(
+        minutante__isnull=False,
+        status__ativo=True,
+    ).values('minutante_id', 'status__pk').annotate(total=Count('id', distinct=True))
+
+    counts = defaultdict(lambda: defaultdict(int))
+    for row in raw:
+        counts[row['status__pk']][row['minutante_id']] = row['total']
+
+    resultado = []
+    for status in status_tipos:
+        contagens = [counts[status.pk][m.pk] for m in minutantes]
+
+        if not any(c > 0 for c in contagens):
+            continue
+
+        if len(contagens) < 2:
+            media = float(contagens[0]) if contagens else 0.0
+            desvio = 0.0
+        else:
+            media = stat_lib.mean(contagens)
+            try:
+                desvio = stat_lib.stdev(contagens)
+            except stat_lib.StatisticsError:
+                desvio = 0.0
+
+        lim_sup = media + desvio
+        lim_inf = max(media - desvio, 0)
+
+        minutantes_data = []
+        for m, total in zip(minutantes, contagens):
+            if desvio > 0:
+                if total > lim_sup:
+                    posicao = 'acima'
+                elif total < lim_inf:
+                    posicao = 'abaixo'
+                else:
+                    posicao = 'dentro'
+            else:
+                posicao = 'dentro'
+
+            minutantes_data.append({
+                'minutante': m,
+                'total': total,
+                'posicao': posicao,
+            })
+
+        minutantes_data.sort(key=lambda x: x['total'], reverse=True)
+
+        resultado.append({
+            'status': status,
+            'media': round(media, 1),
+            'desvio': round(desvio, 1),
+            'lim_sup': round(lim_sup, 1),
+            'lim_inf': round(lim_inf, 1),
+            'minutantes': minutantes_data,
+        })
+
+    return resultado
+
+
+def relatorio_estatisticas(request, pk=None):
+    pauta = None
+    if pk:
+        pauta = get_object_or_404(Pauta, pk=pk)
+        revisoes_qs = RevisaoProcesso.objects.filter(pauta=pauta)
+        titulo = f'Estatísticas — {pauta.titulo}'
+    else:
+        revisoes_qs = RevisaoProcesso.objects.all()
+        titulo = 'Estatísticas Gerais de Correção'
+
+    estatisticas = _calcular_estatisticas_status(revisoes_qs)
+
+    context = {
+        'pauta': pauta,
+        'estatisticas': estatisticas,
+        'titulo': titulo,
+    }
+    return render(request, 'pautas/relatorio_estatisticas.html', context)
+
+
+# Grupos de categorias para o relatório de qualidade.
+# "Retirado de pauta" e "Liberado" são excluídos intencionalmente.
+_GRUPOS_QUALIDADE = [
+    {
+        'nome': 'Devolvido',
+        'descricao': 'Minutas devolvidas para correção ou para despacho.',
+        'q': Q(nome__icontains='devolvid'),
+        'positiva': False,
+    },
+    {
+        'nome': 'Fundamentação',
+        'descricao': 'Minutas com ajuste de fundamentação solicitado.',
+        'q': Q(nome__icontains='fundamenta'),
+        'positiva': False,
+    },
+    {
+        'nome': 'Erro / Formatação',
+        'descricao': 'Minutas com erro material ou problema de formatação.',
+        'q': Q(nome__icontains='erro') | Q(nome__icontains='formata'),
+        'positiva': False,
+    },
+]
+
+
+def _z_cor_classif(z, positiva):
+    """Retorna (cor_css, label) normalizando pela direção da categoria.
+    Para positivas: z alto = bom. Para negativas: z baixo = bom.
+    cor_css é sufixo para a classe CSS 'z-<cor>'."""
+    z_eff = z if positiva else -z  # z_eff > 0 sempre significa desempenho favorável
+    if z_eff >= 2:
+        return ('muito-bom', 'Excelente')
+    elif z_eff >= 1:
+        return ('bom', 'Ótimo')
+    elif z_eff > -1:
+        return ('normal', 'Padrão')
+    elif z_eff > -2:
+        return ('ruim', 'Atenção')
+    else:
+        return ('muito-ruim', 'Ruim')
+
+
+def _calcular_qualidade(revisoes_qs, min_minutas=3, m0=5):
+    """
+    Modelo estatístico de qualidade por grupo de categoria usando z-scores.
+
+    Grupos: Devolvido · Fundamentação · Erro/Formatação.
+    Retirado de pauta: excluído.
+
+    Suavização EB: taxa_aj = (occ + m0 × taxa_global) / (total + m0).
+    Puxa servidores com poucos dados em direção à média do gabinete naquela
+    categoria — sem distorcer para 50% como faria o add-k fixo.
+    DP: populacional (pstdev) — todos os servidores são a população inteira.
+    """
+    from collections import defaultdict
+
+    # Exclui minutas com análise pendente (sem status atribuído)
+    revisoes_qs = revisoes_qs.filter(status__isnull=False).distinct()
+
+    minutantes = list(
+        Responsavel.objects.filter(
+            revisoes_minutadas__in=revisoes_qs
+        ).distinct().order_by('nome_completo')
+    )
+    if not minutantes:
+        return {'minutantes': [], 'categorias': [], 'matrix': [],
+                'total_minutas_global': 0}
+
+    totais = {m.pk: revisoes_qs.filter(minutante=m).count() for m in minutantes}
+    total_global = sum(totais.values())
+
+    matrix_map = {m.pk: {} for m in minutantes}
+    categorias = []
+    grupos_ativos = []
+
+    for grupo in _GRUPOS_QUALIDADE:
+        status_ids = list(StatusRevisao.objects.filter(grupo['q']).values_list('pk', flat=True))
+        if not status_ids:
+            continue
+
+        gn = grupo['nome']
+        positiva = grupo['positiva']
+
+        # Contagens por minutante para este grupo (distinct evita dupla-contagem
+        # quando uma revisão tem múltiplos status do mesmo grupo, ex: Erro + Formatação)
+        raw = (
+            revisoes_qs
+            .filter(minutante__isnull=False, status__in=status_ids)
+            .values('minutante_id')
+            .annotate(total=Count('id', distinct=True))
+        )
+        occ_grupo = defaultdict(int)
+        for row in raw:
+            occ_grupo[row['minutante_id']] = row['total']
+
+        # Prior empírico = taxa global do gabinete neste grupo
+        total_occ_g = sum(occ_grupo[m.pk] for m in minutantes)
+        taxa_global = total_occ_g / total_global if total_global > 0 else 0
+
+        taxas_aj = []
+        cells = []
+        for m in minutantes:
+            n = totais[m.pk]
+            k = occ_grupo[m.pk]
+            taxa_bruta = k / n if n > 0 else 0
+            taxa_aj = (k + m0 * taxa_global) / (n + m0) if n > 0 else taxa_global
+            taxas_aj.append(taxa_aj)
+            cells.append({
+                'minutante': m,
+                'total_minutas': n,
+                'ocorrencias': k,
+                'taxa_bruta_pct': round(taxa_bruta * 100, 1),
+                'taxa_aj': taxa_aj,
+                'positiva': positiva,
+                'confiavel': n >= min_minutas,
+            })
+
+        media = stat_lib.mean(taxas_aj) if taxas_aj else 0.0
+        dp = stat_lib.pstdev(taxas_aj) if len(taxas_aj) >= 2 else 0.0
+
+        for cell in cells:
+            if not cell['confiavel']:
+                cell.update({'z': None, 'cor': 'nd', 'classificacao': 'ND'})
+            elif dp > 0:
+                z = round((cell['taxa_aj'] - media) / dp, 2)
+                cor, classif = _z_cor_classif(z, positiva)
+                cell.update({'z': z, 'cor': cor, 'classificacao': classif})
+            else:
+                cell.update({'z': 0.0, 'cor': 'normal', 'classificacao': 'Padrão'})
+            matrix_map[cell['minutante'].pk][gn] = cell
+
+        ranking = sorted(
+            cells,
+            key=lambda c: (c.get('z') or 0) * (1 if positiva else -1),
+            reverse=True,
+        )
+        cat = {
+            'nome': gn,
+            'descricao': grupo['descricao'],
+            'positiva': positiva,
+            'taxa_global_pct': round(taxa_global * 100, 1),
+            'media_pct': round(media * 100, 1),
+            'dp_pct': round(dp * 100, 1),
+            'ranking': ranking,
+        }
+        categorias.append(cat)
+        grupos_ativos.append(grupo)
+
+    # Matrix: uma linha por minutante, ordenada por score global
+    matrix = []
+    for m in minutantes:
+        row_cells = [matrix_map[m.pk].get(g['nome']) for g in grupos_ativos]
+        zs_eff = [
+            c['z'] * (1 if c['positiva'] else -1)
+            for c in row_cells
+            if c and c.get('z') is not None
+        ]
+        score = round(sum(zs_eff) / len(zs_eff), 2) if zs_eff else None
+        if score is not None:
+            score_cor, score_classif = _z_cor_classif(score, positiva=True)
+        else:
+            score_cor, score_classif = 'nd', 'ND'
+        matrix.append({
+            'minutante': m,
+            'total_minutas': totais[m.pk],
+            'cells': row_cells,
+            'score': score,
+            'score_cor': score_cor,
+            'score_classif': score_classif,
+        })
+
+    matrix.sort(key=lambda r: r['score'] if r['score'] is not None else -999, reverse=True)
+
+    return {
+        'minutantes': minutantes,
+        'categorias': categorias,
+        'matrix': matrix,
+        'total_minutas_global': total_global,
+    }
+
+
+def relatorio_qualidade(request, pk=None):
+    pauta = None
+    if pk:
+        pauta = get_object_or_404(Pauta, pk=pk)
+        revisoes_qs = RevisaoProcesso.objects.filter(pauta=pauta)
+        titulo = f'Qualidade das Minutas — {pauta.titulo}'
+    else:
+        revisoes_qs = RevisaoProcesso.objects.all()
+        titulo = 'Qualidade das Minutas — Relatório Geral'
+
+    dados = _calcular_qualidade(revisoes_qs)
+    context = {'pauta': pauta, 'titulo': titulo, **dados}
+    return render(request, 'pautas/relatorio_qualidade.html', context)

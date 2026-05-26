@@ -1,0 +1,265 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<style>
+/* ── Heatmap ───────────────────────────────────────────── */
+.z-muito-bom  { background-color: rgba(25, 135, 84, .48) !important; }
+.z-bom        { background-color: rgba(25, 135, 84, .20) !important; }
+.z-normal     { background-color: transparent; }
+.z-ruim       { background-color: rgba(255, 193,  7, .32) !important; }
+.z-muito-ruim { background-color: rgba(220,  53, 69, .42) !important; }
+.z-nd         { background-color: var(--phoenix-tertiary-bg) !important;
+                color: var(--phoenix-secondary-color) !important; }
+
+/* ── Cell layout ───────────────────────────────────────── */
+.hm-cell    { text-align: center; min-width: 105px;
+              padding: .35rem .5rem !important; vertical-align: middle; }
+.z-val      { font-size: .85rem; font-weight: 700; line-height: 1.2; }
+.z-sub      { font-size: .68rem; opacity: .65; line-height: 1.3; }
+.score-sep  { border-left: 2px solid var(--phoenix-border-color); }
+
+/* ── Legend dots ───────────────────────────────────────── */
+.ldot { width: 13px; height: 13px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+</style>
+
+<div class="pb-5">
+<div class="row g-4">
+<div class="col-12">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb fs--1">
+      <li class="breadcrumb-item"><a href="{% url 'pautas:lista_pautas' %}">Pautas</a></li>
+      {% if pauta %}
+      <li class="breadcrumb-item"><a href="{% url 'pautas:pauta' pauta.pk %}">{{ pauta.titulo }}</a></li>
+      {% endif %}
+      <li class="breadcrumb-item active">Qualidade</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <h2 class="mb-1 text-900">{{ titulo }}</h2>
+      <p class="text-700 mb-0 fs--1">
+        {{ total_minutas_global }} minuta{{ total_minutas_global|pluralize }}
+        · {{ minutantes|length }} servidor{{ minutantes|length|pluralize }}
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if pauta %}
+        <a href="{% url 'pautas:relatorio_qualidade' %}" class="btn btn-phoenix-secondary btn-sm">Relatório geral</a>
+        <a href="{% url 'pautas:pauta' pauta.pk %}" class="btn btn-phoenix-secondary btn-sm">← Pauta</a>
+      {% else %}
+        <a href="{% url 'pautas:lista_pautas' %}" class="btn btn-phoenix-secondary btn-sm">← Pautas</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not matrix %}
+  <div class="card shadow-none border border-300">
+    <div class="card-body text-center py-5 text-700">
+      Nenhum dado disponível{% if pauta %} para esta pauta{% endif %}.
+    </div>
+  </div>
+  {% else %}
+
+  <!-- ── Legenda ──────────────────────────────────────── -->
+  <div class="card shadow-none border border-300 mb-4">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap gap-3 align-items-center fs--2 mb-2">
+        <span class="fw-semibold text-900 fs--1">Escala z-score</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-muito-bom"></span><strong>Excelente</strong> z ≥ +2</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-bom"></span><strong>Ótimo</strong> +1 ≤ z &lt; +2</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-normal" style="border:1px solid var(--phoenix-border-color)"></span><strong>Padrão</strong> |z| &lt; 1</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-ruim"></span><strong>Atenção</strong> −2 &lt; z ≤ −1</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-muito-ruim"></span><strong>Ruim</strong> z ≤ −2</span>
+        <span class="d-flex align-items-center gap-1"><span class="ldot z-nd"></span>ND — dados insuf.</span>
+      </div>
+      <p class="mb-0 fs--2 text-600">
+        <strong class="text-danger">Devolvido · Fundamentação · Erro/Formatação</strong>: incidência <em>alta</em> = ruim (mais erros).
+        As cores refletem essa lógica — verde sempre indica melhor desempenho para a categoria em questão.
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       HEATMAP PRINCIPAL
+       ══════════════════════════════════════════════ -->
+  <div class="card shadow-none border border-300 mb-4">
+    <div class="card-header border-bottom border-300 py-3">
+      <h5 class="mb-0 text-900">Dashboard por Servidor</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive scrollbar">
+        <table class="table table-sm mb-0 fs--1">
+          <thead class="border-bottom border-300">
+            <tr>
+              <th class="ps-3 py-2" style="min-width:140px;">Servidor</th>
+              <th class="text-center py-2" style="min-width:65px;">Minutas</th>
+              {% for cat in categorias %}
+              <th class="hm-cell py-2" title="{{ cat.descricao }}">
+                {{ cat.nome }}
+                {% if cat.positiva %}
+                  <div class="fs--2 fw-normal text-success">alto = bom ⬆</div>
+                {% else %}
+                  <div class="fs--2 fw-normal text-danger">alto = ruim ⬆</div>
+                {% endif %}
+                <div class="fs--2 fw-normal text-700">média {{ cat.media_pct }}%</div>
+              </th>
+              {% endfor %}
+              <th class="hm-cell score-sep py-2"
+                  title="Média dos z-scores normalizados (negativas invertidas). Positivo = acima da média geral do gabinete.">
+                Score
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in matrix %}
+            <tr>
+              <td class="ps-3 py-2 fw-semibold text-900">
+                {{ row.minutante.nome_completo|default:row.minutante.inicial }}
+              </td>
+              <td class="text-center py-2 text-700">{{ row.total_minutas }}</td>
+
+              {% for cell in row.cells %}
+              {% if cell %}
+              <td class="hm-cell py-2 z-{{ cell.cor }}">
+                {% if cell.z is not None %}
+                  <div class="z-val">{% if cell.z > 0 %}+{% endif %}{{ cell.z|floatformat:1 }}</div>
+                  <div class="z-sub">{{ cell.taxa_bruta_pct }}%</div>
+                {% else %}
+                  <span class="z-sub">ND</span>
+                {% endif %}
+              </td>
+              {% else %}
+              <td class="hm-cell z-nd py-2"><span class="z-sub">—</span></td>
+              {% endif %}
+              {% endfor %}
+
+              <!-- Score global -->
+              <td class="hm-cell score-sep py-2 z-{{ row.score_cor }}">
+                {% if row.score is not None %}
+                  <div class="z-val">{% if row.score > 0 %}+{% endif %}{{ row.score|floatformat:2 }}</div>
+                  <div class="z-sub">{{ row.score_classif }}</div>
+                {% else %}
+                  <span class="z-sub">ND</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="border-top border-300">
+            <tr class="fs--2 text-600">
+              <td class="ps-3 py-2 fw-semibold text-700">Média gabinete</td>
+              <td class="text-center py-2">{{ total_minutas_global }}</td>
+              {% for cat in categorias %}
+              <td class="hm-cell py-1">
+                <div class="z-val">{{ cat.media_pct }}%</div>
+                <div class="z-sub">±{{ cat.dp_pct }}%</div>
+              </td>
+              {% endfor %}
+              <td class="score-sep"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       CARDS POR CATEGORIA
+       ══════════════════════════════════════════════ -->
+  <h5 class="text-900 mb-3">Detalhamento por Categoria</h5>
+  <div class="row g-3">
+  {% for cat in categorias %}
+  <div class="col-12 col-xl-6">
+    <div class="card shadow-none border border-300 h-100">
+
+      <div class="card-header border-bottom border-300 py-2">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <span class="fw-semibold text-900">{{ cat.nome }}</span>
+            {% if cat.positiva %}
+              <span class="badge badge-phoenix badge-phoenix-success ms-2 fs--2">positiva · alto = bom</span>
+            {% else %}
+              <span class="badge badge-phoenix badge-phoenix-danger ms-2 fs--2">negativa · alto = ruim</span>
+            {% endif %}
+            <div class="fs--2 text-600 mt-1">{{ cat.descricao }}</div>
+          </div>
+          <div class="text-end fs--2 text-700 text-nowrap">
+            taxa global <strong>{{ cat.taxa_global_pct }}%</strong><br>
+            média/servidor <strong>{{ cat.media_pct }}%</strong> ± <strong>{{ cat.dp_pct }}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 fs--2">
+          <thead>
+            <tr class="border-bottom border-200">
+              <th class="ps-3 py-1">Servidor</th>
+              <th class="text-center py-1"
+                  title="Minutas com esta ocorrência ÷ total de minutas do servidor (ex: 3 em 50).">
+                Ocorr.
+              </th>
+              <th class="text-center py-1"
+                  title="Taxa de incidência: ocorrências ÷ total de minutas do servidor.">
+                Taxa
+              </th>
+              <th class="text-center py-1"
+                  title="Distância da média do gabinete em desvios padrão. z=0 está na média; z=+1 está 1 desvio padrão acima; z=−1 está 1 desvio abaixo.">
+                z-score
+              </th>
+              <th class="text-center pe-3 py-1"
+                  title="Interpretação do z-score ajustada pela direção da categoria. Para todas as categorias aqui, z alto significa mais erros que a média (ruim).">
+                Classificação
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cell in cat.ranking %}
+            <tr class="z-{{ cell.cor }}">
+              <td class="ps-3 py-1 fw-semibold">
+                {{ cell.minutante.nome_completo|default:cell.minutante.inicial }}
+              </td>
+              <td class="text-center py-1">{{ cell.ocorrencias }}/{{ cell.total_minutas }}</td>
+              <td class="text-center py-1">{{ cell.taxa_bruta_pct }}%</td>
+              <td class="text-center py-1 fw-bold">
+                {% if cell.z is not None %}
+                  {% if cell.z > 0 %}+{% endif %}{{ cell.z|floatformat:2 }}
+                {% else %}
+                  <span class="text-600">ND</span>
+                {% endif %}
+              </td>
+              <td class="text-center pe-3 py-1">
+                {% if cell.classificacao == 'Excelente' %}
+                  <span class="badge badge-phoenix badge-phoenix-success">Excelente</span>
+                {% elif cell.classificacao == 'Ótimo' %}
+                  <span class="badge badge-phoenix badge-phoenix-success">Ótimo</span>
+                {% elif cell.classificacao == 'Padrão' %}
+                  <span class="badge badge-phoenix badge-phoenix-secondary">Padrão</span>
+                {% elif cell.classificacao == 'Atenção' %}
+                  <span class="badge badge-phoenix badge-phoenix-warning">Atenção</span>
+                {% elif cell.classificacao == 'Ruim' %}
+                  <span class="badge badge-phoenix badge-phoenix-danger">Ruim</span>
+                {% else %}
+                  <span class="badge badge-phoenix badge-phoenix-secondary">ND</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+  </div><!-- /row categorias -->
+
+  {% endif %}{# /if matrix #}
+
+</div>
+</div>
+</div>
+{% endblock conteudo %}

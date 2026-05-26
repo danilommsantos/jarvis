@@ -3,7 +3,7 @@ from .models import Pauta, ListaProcessos, StatusRevisao, RevisaoProcesso, Obser
 
 @admin.register(Pauta)
 class PautaAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'data_inicio', 'data_final', 'criado_em')
+    list_display = ('titulo', 'data_inicio', 'data_final', 'pasta')
     search_fields = ('titulo',)
     list_filter = ('data_inicio', 'data_final')
 
@@ -45,7 +45,7 @@ class ObservacaoRevisaoInline(admin.TabularInline):
 @admin.register(RevisaoProcesso)
 class RevisaoProcessoAdmin(admin.ModelAdmin):
     list_display = ('processo', 'pauta', 'lista_origem', 'get_status')
-    list_filter = ('pauta', 'lista_origem', 'status')
+    list_filter = ('pauta', 'lista_origem', 'status', 'minutante')
     search_fields = ('processo__numero', 'anotacoes')
     filter_horizontal = ('status',) # Melhora a interface para selecionar múltiplos status (ManyToMany)
     inlines = [ObservacaoRevisaoInline]

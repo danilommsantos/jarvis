@@ -1,4 +1,5 @@
-{% extends "main/base.html" %} 
+{% extends "main/base.html" %}
+{% load menu_tags %}
 {% block conteudo %}
 <div class="pb-5">
     <div class="row g-4">
@@ -7,14 +8,17 @@
                 <div>
                     <h2 class="mb-0 text-900">Pautas de Julgamento</h2>
                     <p class="text-700 mb-0">Gerencie e organize as sessões de processos</p>
-                </div>                
+                </div>
+                <a href="{% url 'pautas:relatorio_qualidade' %}" class="btn btn-phoenix-primary btn-sm">
+                    <i class="fa-solid fa-chart-bar me-1"></i> Qualidade das Minutas
+                </a>
             </div>
 
             <div class="card shadow-none border border-300">
                 <div class="card-body pt-0 pb-3"> 
                     
-                    <div id="pautasTable" data-list='{"valueNames":["nome","data_sessao","criado_em","atualizado_em"],"page":50,"pagination":true}'>
-                        
+                    <div id="pautasTable" data-list='{"valueNames":["nome","periodo","total","revisados","pendentes","tempo"],"page":50,"pagination":true}'>
+
                         <div class="row align-items-center justify-content-between py-4">
                             <div class="col-12 col-md-auto">
                                 <div class="search-box">
@@ -30,51 +34,54 @@
                             <table class="table table-sm fs--1 mb-0 border-top border-200">
                                 <thead>
                                     <tr>
-                                        <th class="sort align-middle text-center" data-sort="nome" style="min-width: 250px">TÍTULO</th>
-                                        <th class="sort align-middle text-center" data-sort="data_sessao">TOTAL DE PROCESSOS</th>
-                                        <th class="sort align-middle text-center" data-sort="data_sessao">INÍCIO DA SESSÃO</th>
-                                        <th class="sort align-middle text-center" data-sort="criado_em">CRIADO EM</th>
-                                        <th class="sort align-middle text-center" data-sort="atualizado_em">ATUALIZADO</th>
-                                        <th class="text-end align-middle pe-0">AÇÕES</th>
+                                        <th class="sort align-middle" data-sort="nome">TÍTULO</th>
+                                        <th class="sort align-middle text-center" data-sort="periodo">PERÍODO</th>
+                                        <th class="sort align-middle text-center" data-sort="total">TOTAL</th>
+                                        <th class="align-middle text-center">PROGRESSO</th>
+                                        <th class="sort align-middle text-center" data-sort="pendentes">PENDENTES</th>
+                                        <th class="sort align-middle text-center" data-sort="tempo">TEMPO</th>
                                     </tr>
                                 </thead>
                                 <tbody class="list">
                                     {% for pauta in pautas %}
-                                    <tr class="hover-actions-trigger btn-reveal-trigger">
+                                    <tr>
                                         <td class="nome align-middle">
-                                            <a class="fw-bold text-900" href="{% url 'pautas:pauta' pauta.pk %}">
-                                                {{ pauta.titulo }}
-                                            </a>
+                                            <a class="fw-bold text-900" href="{% url 'pautas:pauta' pauta.pk %}">{{ pauta.titulo }}</a>
                                         </td>
-                                        <td class="data_sessao align-middle text-700 text-center">
-                                            {{ pauta.total_processos|default:"0" }}
-                                        </td>
-                                        <td class="data_sessao align-middle text-700 text-center">
+                                        <td class="periodo align-middle text-700 text-center text-nowrap">
                                             {{ pauta.data_inicio|date:"d/m/Y" }}
+                                            {% if pauta.data_final != pauta.data_inicio %}
+                                                → {{ pauta.data_final|date:"d/m/Y" }}
+                                            {% endif %}
                                         </td>
-                                        <td class="criado_em align-middle text-600 text-center">
-                                            {{ pauta.criado_em|date:"d/m/Y H:i" }}
+                                        <td class="total align-middle text-700 text-center">
+                                            {{ pauta.total_processos }}
                                         </td>
-                                        <td class="atualizado_em align-middle text-600 text-center">
-                                            {{ pauta.atualizado_em|date:"d/m/Y H:i" }}
-                                        </td>
-                                        <td class="text-end align-middle white-space-nowrap pe-0  text-center">
-                                            <div class="font-sans-serif btn-reveal-trigger position-static">
-                                                <button class="btn btn-sm dropdown-toggle dropdown-caret-none transition-none btn-reveal fs--2" type="button" data-bs-toggle="dropdown">
-                                                    <span class="fas fa-ellipsis-h fs--2"></span>
-                                                </button>
-                                                <div class="dropdown-menu dropdown-menu-end py-2">
-                                                    <a class="dropdown-item" href="{% url 'pautas:pauta' pauta.pk %}">Visualizar</a>
-                                                    <a class="dropdown-item" href="#">Editar</a>
-                                                    <div class="dropdown-divider"></div>
-                                                    <a class="dropdown-item text-danger" href="#">Remover</a>
+                                        <td class="align-middle" style="min-width:120px">
+                                            {% if pauta.total_processos %}
+                                                {% widthratio pauta.total_revisados pauta.total_processos 100 as pct %}
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress flex-grow-1" style="height:6px;">
+                                                        <div class="progress-bar bg-success" style="width:{{ pct }}%"></div>
+                                                    </div>
+                                                    <span class="text-700 fs--2 text-nowrap">{{ pct }}%</span>
                                                 </div>
-                                            </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="pendentes align-middle text-center">
+                                            {% if pauta.total_pendentes %}
+                                                <span class="text-warning fw-semibold">{{ pauta.total_pendentes }}</span>
+                                            {% elif pauta.total_processos %}
+                                                <span class="text-success fas fa-check"></span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="tempo align-middle text-700 text-center text-nowrap">
+                                            {{ pauta.tempo_total|formatar_tempo }}
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="5" class="text-center py-5">
+                                        <td colspan="6" class="text-center py-5">
                                             <p class="mb-0 text-600 italic">Nenhuma pauta cadastrada no momento.</p>
                                         </td>
                                     </tr>

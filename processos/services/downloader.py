@@ -67,7 +67,7 @@ def baixar_planilha_acervo():
         # PASSO 2: NAVEGAÇÃO
         # =========================================================
         # Clicar na Ministra
-        ministra = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'Ministra Kátia Magalhães Arruda')]")))
+        ministra = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'Desembargadora Convocada Eleonora Bordini Coca')]")))
         ministra.click()
         
         # ---------------------------------------------------------

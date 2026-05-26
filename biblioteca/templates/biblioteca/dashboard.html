@@ -1,0 +1,191 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<div class="pb-5">
+  <div class="row g-4">
+    <div class="col-12">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h2 class="mb-0 text-900">Biblioteca de Leitura</h2>
+          <p class="text-700 mb-0">Acompanhe seu progresso de leitura</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="deploy-btn"
+                  class="btn btn-phoenix-secondary btn-sm"
+                  data-url="{% url 'biblioteca:deploy' %}"
+                  data-csrf="{{ csrf_token }}">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Deploy Cloudflare
+          </button>
+          <a href="{% url 'biblioteca:novo' %}" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus me-1"></i> Novo Documento
+          </a>
+        </div>
+      </div>
+
+      <div id="deploy-status" class="alert py-2 px-3 fs--1 mb-3" style="display:none;"></div>
+
+      <!-- Stats -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-body">
+              <p class="text-700 fs--1 mb-1">Total</p>
+              <h3 class="mb-0 text-900">{{ total }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-body">
+              <p class="text-700 fs--1 mb-1">Lidos</p>
+              <h3 class="mb-0 text-success">{{ lidos }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-body">
+              <p class="text-700 fs--1 mb-1">Pendentes</p>
+              <h3 class="mb-0 text-warning">{{ pendentes_count }}</h3>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-body">
+              <p class="text-700 fs--1 mb-1">Progresso</p>
+              <h3 class="mb-0 text-900">{{ pct }}%</h3>
+              <div class="progress mt-2" style="height:4px;">
+                <div class="progress-bar bg-primary" style="width:{{ pct }}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categorias + Próximos -->
+      <div class="row g-4">
+
+        <div class="col-xl-5">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-header border-bottom border-300 py-3">
+              <h5 class="mb-0 text-900">Progresso por Categoria</h5>
+            </div>
+            <div class="card-body p-0">
+              <ul class="list-group list-group-flush">
+                {% for s in cat_stats %}
+                <li class="list-group-item border-300 px-4 py-3">
+                  <a href="{% url 'biblioteca:lista' %}?categoria={{ s.categoria.slug }}"
+                     class="text-decoration-none text-900">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="fw-semibold fs--1">{{ s.categoria.nome }}</span>
+                      <small class="text-700">{{ s.lidos }}/{{ s.total }}</small>
+                    </div>
+                    <div class="progress" style="height:4px;">
+                      <div class="progress-bar {% if s.pct == 100 %}bg-success{% else %}bg-primary{% endif %}"
+                           style="width:{{ s.pct }}%"></div>
+                    </div>
+                  </a>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-center text-700 py-5">
+                  Nenhuma categoria cadastrada
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-7">
+          <div class="card shadow-none border border-300 h-100">
+            <div class="card-header border-bottom border-300 d-flex justify-content-between align-items-center py-3">
+              <h5 class="mb-0 text-900">Próximos para Ler</h5>
+              <a href="{% url 'biblioteca:lista' %}?status=pendente"
+                 class="btn btn-sm btn-phoenix-primary">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive scrollbar">
+                <table class="table table-sm fs--1 mb-0 border-top border-200">
+                  <thead>
+                    <tr>
+                      <th class="ps-3">Documento</th>
+                      <th>Categoria</th>
+                      <th class="text-end pe-3">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for doc in proximos %}
+                    <tr>
+                      <td class="ps-3 py-2">
+                        <a href="{% url 'biblioteca:detalhe' doc.slug %}"
+                           class="fw-semibold text-900 text-decoration-none">
+                          {{ doc.titulo }}
+                        </a>
+                        {% if doc.prioridade >= 2 %}
+                        <span class="badge badge-phoenix badge-phoenix-danger ms-1">Urgente</span>
+                        {% elif doc.prioridade == 1 %}
+                        <span class="badge badge-phoenix badge-phoenix-warning ms-1">Alta</span>
+                        {% endif %}
+                      </td>
+                      <td class="py-2 text-700">{{ doc.categoria.nome }}</td>
+                      <td class="text-end pe-3 py-2">
+                        <a href="{% url 'biblioteca:detalhe' doc.slug %}"
+                           class="btn btn-sm btn-phoenix-primary">Ler</a>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="3" class="text-center py-4 text-success fw-semibold">
+                        Todos os documentos foram lidos!
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById('deploy-btn');
+  var status = document.getElementById('deploy-status');
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Publicando...';
+    status.style.display = 'none';
+    fetch(btn.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': btn.dataset.csrf, 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> Deploy Cloudflare';
+      status.style.display = '';
+      if (d.ok) {
+        status.className = 'alert alert-success py-2 px-3 fs--1 mb-3';
+        status.textContent = d.publicados + ' documento(s) publicado(s) com sucesso.' +
+                             (d.erros ? ' Avisos: ' + d.erros : '');
+      } else {
+        status.className = 'alert alert-danger py-2 px-3 fs--1 mb-3';
+        status.textContent = 'Erro: ' + d.erros;
+      }
+    })
+    .catch(function (err) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-1"></i> Deploy Cloudflare';
+      status.style.display = '';
+      status.className = 'alert alert-danger py-2 px-3 fs--1 mb-3';
+      status.textContent = 'Erro de conexão: ' + err;
+    });
+  });
+})();
+</script>
+{% endblock conteudo %}

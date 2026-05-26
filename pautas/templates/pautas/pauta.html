@@ -1,8 +1,12 @@
-{% extends "main/base.html" %} 
+{% extends "main/base.html" %}
+{% load menu_tags %}
 {% block conteudo %}
 <div class="container-fluid mt-3 mb-9">
     <div class="row align-items-center justify-content-between mb-4">
         <div class="col-auto">
+            <a href="{% url 'pautas:lista_pautas' %}" class="text-700 fs--1 text-decoration-none mb-1 d-block">
+                <span class="fas fa-arrow-left me-1"></span>Pautas
+            </a>
             <h2 class="mb-2">{{ pauta.titulo }}</h2>
             {% if pauta.pasta %}
                 <p class="text-500 small mb-0">
@@ -13,46 +17,49 @@
         
         <div class="col-auto d-flex gap-2">
             {% if pauta.pasta %}
-                <a href="{% url 'pautas:extrair_minutantes_docx' pauta.pk %}" class="btn btn-phoenix-secondary">
-                    <span class="fas fa-file-word me-2"></span>Extrair Responsáveis
+                <a href="{% url 'pautas:extrair_minutantes_docx' pauta.pk %}"
+                   class="btn btn-phoenix-secondary btn-icon"
+                   data-bs-toggle="tooltip" title="Extrair Responsáveis">
+                    <span class="fas fa-file-word"></span>
                 </a>
             {% else %}
-                <button class="btn btn-phoenix-secondary" disabled title="Configure a pasta no Admin">
-                    <span class="fas fa-file-word me-2"></span>Extrair Responsáveis
+                <button class="btn btn-phoenix-secondary btn-icon" disabled
+                        data-bs-toggle="tooltip" title="Configure a pasta no Admin">
+                    <span class="fas fa-file-word"></span>
                 </button>
             {% endif %}
-            <a href="{% url 'pautas:relatorio_observacoes' pauta.pk %}" class="btn btn-phoenix-primary">
-                <span class="fas fa-clipboard-list me-2"></span>Gerar Relatório
+            <a href="{% url 'pautas:relatorio_observacoes' pauta.pk %}"
+               class="btn btn-phoenix-primary btn-icon"
+               data-bs-toggle="tooltip" title="Gerar Relatório">
+                <span class="fas fa-clipboard-list"></span>
             </a>
-            <div class="col-auto">
-                <a href="{% url 'pautas:proxima_revisao' pauta.pk %}" class="btn btn-primary">
-                    <span class="fas fa-play me-2"></span>Revisar
-                </a>
-            </div>
-            <button
-                type="button"
-                class="btn btn-success"
-                data-bs-toggle="modal"
-                data-bs-target="#modalMarcarRR"
-            >
-                <span class="fas fa-check-double me-2"></span>Marcar RR Provido
+            <a href="{% url 'pautas:relatorio_qualidade_pauta' pauta.pk %}"
+               class="btn btn-phoenix-primary btn-icon"
+               data-bs-toggle="tooltip" title="Qualidade">
+                <span class="fas fa-chart-bar"></span>
+            </a>
+            <a href="{% url 'pautas:proxima_revisao' pauta.pk %}"
+               class="btn btn-primary btn-icon"
+               data-bs-toggle="tooltip" title="Revisar">
+                <span class="fas fa-play"></span>
+            </a>
+            <button type="button"
+                    class="btn btn-success btn-icon"
+                    data-bs-toggle="tooltip" title="Marcar RR Provido"
+                    onclick="new bootstrap.Modal(document.getElementById('modalMarcarRR')).show()">
+                <span class="fas fa-check-double"></span>
             </button>
-
-            <button
-                type="button"
-                class="btn btn-warning"
-                data-bs-toggle="modal"
-                data-bs-target="#modalMoverProcessos"
-            >
-                <span class="fas fa-exchange-alt me-2"></span>Mover Processos
+            <button type="button"
+                    class="btn btn-warning btn-icon"
+                    data-bs-toggle="tooltip" title="Mover Processos"
+                    onclick="new bootstrap.Modal(document.getElementById('modalMoverProcessos')).show()">
+                <span class="fas fa-exchange-alt"></span>
             </button>
-            <button
-                type="button"
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#modalAdicionarProcesso"
-            >
-                <span class="fas fa-plus me-2"></span>Adicionar Processo
+            <button type="button"
+                    class="btn btn-primary btn-icon"
+                    data-bs-toggle="tooltip" title="Adicionar Processo"
+                    onclick="new bootstrap.Modal(document.getElementById('modalAdicionarProcesso')).show()">
+                <span class="fas fa-plus"></span>
             </button>
         </div>
     </div>
@@ -69,18 +76,18 @@
                         <table class="table table-sm table-striped table-hover mb-0">
                             <thead class="table">
                                 <tr>
-                                    <th scope="col" class="text-end pe-3">
-                                        Número do Processo
-                                    </th>
-                                    <th scope="col" class="text-center">Minutante</th>
-                                    <th scope="col" class="text-center">Lote</th>
-                                    <th scope="col" class="text-center">Status</th>
+                                    <th scope="col" class="col-6 text-end pe-3">Número do Processo</th>
+                                    <th scope="col" class="col-1 text-center">Minutante</th>
+                                    <th scope="col" class="col-1 text-center">Lote</th>
+                                    <th scope="col" class="col-2 text-center">Status</th>
+                                    <th scope="col" class="col-1 text-center" title="Anotações registradas">Anot.</th>
+                                    <th scope="col" class="col-1 text-center" title="Tempo gasto na revisão">Tempo</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for revisao in revisoes %}
                                 <tr>
-                                    <td class="col-7 text-end align-middle fw-semi-bold pe-3">
+                                    <td class="text-end align-middle fw-semi-bold pe-3">
                                         <!-- Verifica se a lista de atendimentos ou memoriais tem algum item -->
                                         {% if revisao.processo.memoriais.all %}
                                             <span class="badge badge-phoenix badge-phoenix-warning me-2" title="Este processo possui Memorial">
@@ -97,17 +104,17 @@
                                         </a>
                                     </td>
                                     
-                                    <td class="col-1 align-middle text-center">
+                                    <td class="align-middle text-center">
                                         <span class="badge badge-phoenix badge-phoenix-info" title="{{ revisao.minutante }}">
-                                            {{ revisao.minutante.inicial|default:"Desconhecido" }} 
+                                            {{ revisao.minutante.inicial|default:"Desconhecido" }}
                                         </span>
                                     </td>
 
-                                    <td class="col-1 align-middle text-center">
-                                        {{ revisao.lista_origem.titulo|default:"Sem lote" }}
+                                    <td class="align-middle text-center fs--2">
+                                        {{ revisao.lista_origem.titulo|default:"" }}
                                     </td>
-                                    
-                                    <td class="col-3 align-middle text-center">
+
+                                    <td class="align-middle text-center">
                                         {% for status in revisao.status.all %}
                                             {% if forloop.last %}
                                                 <span class="badge badge-phoenix badge-phoenix-info">
@@ -119,12 +126,20 @@
                                                 Pendente
                                             </span>
                                         {% endfor %}
-                                    </td>                                  
+                                    </td>
+                                    <td class="align-middle text-center fs--2 text-700">
+                                        {% if revisao.num_anotacoes %}
+                                            <span class="badge badge-phoenix badge-phoenix-secondary">{{ revisao.num_anotacoes }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle text-center fs--2 text-700 text-nowrap">
+                                        {{ revisao.tempo_gasto|formatar_tempo }}
+                                    </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
                                     <td
-                                        colspan="3"
+                                        colspan="6"
                                         class="text-center py-4 text-500"
                                     >
                                         Nenhum processo vinculado a esta pauta.
@@ -144,24 +159,28 @@
                     <h5 class="mb-0">Resumo da Pauta</h5>
                 </div>
                 <div class="card-body">
-                    <h1 class="display-4 text-primary mb-0">
-                        {{ total_processos }}
-                    </h1>
-                    <p class="text-700 fs--1 mb-0">
-                        Total de processos a revisar
+                    <h1 class="display-4 text-primary mb-0">{{ total_processos }}</h1>
+                    <p class="text-700 fs--1 mb-3">Total de processos</p>
+
+                    <div class="d-flex justify-content-between fs--1 mb-1">
+                        <span class="text-success fw-semibold">{{ total_revisados }} revisados</span>
+                        <span class="text-700">{{ pct_revisados }}%</span>
+                    </div>
+                    <div class="progress mb-1" style="height:7px;">
+                        <div class="progress-bar bg-success" style="width:{{ pct_revisados }}%"></div>
+                    </div>
+                    <p class="text-700 fs--2 mb-3">
+                        {% if total_faltam > 0 %}
+                            {{ total_faltam }} faltam
+                        {% else %}
+                            Todos revisados!
+                        {% endif %}
                     </p>
-                    <h2 class="display-6 text-primary mb-0">
-                        {{ pauta.data_inicio|date:"d.m.Y" }}
-                    </h2>
-                    <p class="text-700 fs--1 mb-0">
-                        Data de abertura
-                    </p>
-                    <h2 class="display-6 text-primary mb-0">
-                        {{ pauta.data_final|date:"d.m.Y" }}
-                    </h2>
-                    <p class="text-700 fs--1 mb-0">
-                        Data de fechamento
-                    </p>
+
+                    <h2 class="display-6 text-primary mb-0">{{ pauta.data_inicio|date:"d.m.Y" }}</h2>
+                    <p class="text-700 fs--1 mb-0">Data de abertura</p>
+                    <h2 class="display-6 text-primary mb-0">{{ pauta.data_final|date:"d.m.Y" }}</h2>
+                    <p class="text-700 fs--1 mb-0">Data de fechamento</p>
                 </div>
             </div>
 
@@ -388,4 +407,11 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
 {% endblock %}

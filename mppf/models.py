@@ -191,7 +191,12 @@ class TriagemMPPF(BaseModel):
                     if re.search(exp.texto, texto_original, re.IGNORECASE):
                         achou = True
                 else:
-                    padrao = rf"\b{re.escape(exp.texto)}\b"
+                    palavras = exp.texto.split()
+                    palavras_escapadas = [re.escape(p) for p in palavras]
+                    padrao_base = r"\s+".join(palavras_escapadas)
+                    inicio = r"\b" if re.match(r'\w', exp.texto[0]) else r""
+                    fim = r"\b" if re.search(r'\w$', exp.texto) else r""
+                    padrao = inicio + padrao_base + fim
                     if re.search(padrao, texto_original, re.IGNORECASE):
                         achou = True
                 

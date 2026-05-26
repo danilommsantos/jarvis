@@ -163,14 +163,18 @@ def destaca_texto_pdf(pdf_path):
                         # Se não for regex, faz o escape e lida com os espaços em branco
                         palavras = expressao.texto.split()
                         palavras_escapadas = [re.escape(p) for p in palavras]
-                        padrao_regex = r"\b" + r"\s+".join(palavras_escapadas) + r"\b"
+                        padrao_base = r"\s+".join(palavras_escapadas)
+                        inicio = r"\b" if re.match(r'\w', expressao.texto[0]) else r""
+                        fim = r"\b" if re.search(r'\w$', expressao.texto) else r""
+                        padrao_regex = inicio + padrao_base + fim
                     
                     # Usamos um set para evitar buscar a mesma string duas vezes na mesma página
                     textos_para_destacar = set()
                     
                     # 2. O Regex procura no texto da página e pesca a string com a formatação REAL do PDF
                     for match in re.finditer(padrao_regex, texto_pagina, flags=re.IGNORECASE):
-                        textos_para_destacar.add(match.group())
+                        texto_normalizado = re.sub(r'\s+', ' ', match.group()).strip()
+                        textos_para_destacar.add(texto_normalizado)
                     
                     # 3. Agora passamos a string literal encontrada para o search_for do PyMuPDF
                     for texto_exato in textos_para_destacar:

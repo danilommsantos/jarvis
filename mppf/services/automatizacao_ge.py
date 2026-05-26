@@ -46,6 +46,7 @@ class GEBot:
     IMG_ABRE_WORD = rf"{DIR_IMG}\abre_word.png"
     IMG_PONTO_INSERCAO = rf"{DIR_IMG}\ponto_insercao.png"
     # IMG_ARQUIVO_CONFIAVEL = rf"{DIR_IMG}\arquivo_confiavel.png"
+    ESPERA = 2
 
     # =========================================================================
 
@@ -72,7 +73,7 @@ class GEBot:
         elemento = self.locate_center_on_screen(img)
         t = 0
         while not elemento:
-            time.sleep(1)
+            time.sleep(self.ESPERA)
             elemento = self.locate_center_on_screen(img)
             ic(nome, t)
             t += 1
@@ -172,22 +173,22 @@ class GEBot:
             EC.element_to_be_clickable((By.XPATH, self.XPATH_INPUT_NUMERO))
         )
         campo.click()
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         campo.send_keys(Keys.CONTROL, 'v')
-        time.sleep(1)
+        time.sleep(self.ESPERA)
 
     def clica_em_pesquisar(self):
         print('clica_em_pesquisar')
         self.checa_elemento_aberto(img=self.IMG_PESQUISAR, nome='Pesquisar', limite=60)
         elemento = self.checa_elemento_aberto(img=self.IMG_PESQUISAR, nome='Pesquisar')
         pyautogui.click(elemento)
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         
     def fecha_fora_do_fluxo(self):
         self.checa_elemento_aberto(img=self.IMG_FORA_FLUXO, nome='Fora do fluxo', limite=60)
         elemento = self.checa_elemento_aberto(img=self.IMG_FORA_FLUXO, nome='Fora do fluxo')
         pyautogui.click(elemento)
-        time.sleep(1)
+        time.sleep(self.ESPERA)
 
     def abre_minuta(self):
         print('abre_minuta')
@@ -195,10 +196,10 @@ class GEBot:
         
         elemento_editar = self.checa_elemento_aberto(img=self.IMG_EDITAR_DECISAO, nome='Editar Decisão')
         pyautogui.click(elemento_editar)
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         
         elemento_word = self.checa_elemento_aberto(img=self.IMG_ABRE_WORD, nome='Abre Word')
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         pyautogui.click(elemento_word)
         time.sleep(2) # Ajustado um pouco o tempo para garantir a transição
 
@@ -235,7 +236,7 @@ class GEBot:
 
     def encontra_ponto_de_insercao_do_DA(self, tempo=0.25):
         ic('encontra_ponto_de_insercao_do_DA')
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         pyautogui.hotkey('ctrl', 'l')
         time.sleep(tempo)
         pyautogui.write('!@#$%')
@@ -255,14 +256,14 @@ class GEBot:
         pyperclip.copy(texto)
         time.sleep(tempo)
         pyautogui.hotkey("ctrl", "v")
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         pyautogui.hotkey('alt', 'f4')
-        time.sleep(1)
+        time.sleep(self.ESPERA)
         pyautogui.hotkey('enter')
 
     def lanca_DA(self):
         while not self.esta_minuta_aberta():
-            time.sleep(1)            
+            time.sleep(self.ESPERA)            
         janela = self.esta_minuta_aberta()
         
         if janela:

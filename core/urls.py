@@ -23,4 +23,5 @@ urlpatterns = [
     path('mppf/', include('mppf.urls')),
     path('processos/', include('processos.urls')),
     path('pautas/', include('pautas.urls')),
+    path('biblioteca/', include('biblioteca.urls')),
 ]

@@ -11,4 +11,8 @@ urlpatterns = [
     path('revisao/<int:pk>/pular/', views.alternar_pular, name='alternar_pular'),
     path('pauta/<int:pauta_pk>/proxima/', views.proxima_revisao, name='proxima_revisao'),
     path('pauta/<int:pk>/relatorio/', views.relatorio_observacoes, name='relatorio_observacoes'),
+    path('estatisticas/', views.relatorio_estatisticas, name='relatorio_estatisticas'),
+    path('pauta/<int:pk>/estatisticas/', views.relatorio_estatisticas, name='relatorio_estatisticas_pauta'),
+    path('qualidade/', views.relatorio_qualidade, name='relatorio_qualidade'),
+    path('pauta/<int:pk>/qualidade/', views.relatorio_qualidade, name='relatorio_qualidade_pauta'),
 ]

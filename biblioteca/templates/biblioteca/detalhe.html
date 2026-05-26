@@ -1,0 +1,352 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<style>
+  .doc-body {
+    max-width: 70ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Força herança de cor e fonte — sobrescreve inline styles do HTML colado */
+  .doc-body * {
+    color: inherit !important;
+    background-color: transparent !important;
+    border-color: var(--phoenix-border-color) !important;
+    font-family: inherit !important;
+  }
+  .doc-body img { background-color: transparent !important; max-width: 100%; }
+  .doc-body pre, .doc-body code {
+    background-color: var(--phoenix-secondary-bg) !important;
+    font-family: monospace !important;
+  }
+  .doc-body table th { background-color: var(--phoenix-tertiary-bg) !important; }
+  .doc-body h1 { font-size: 1.75em; font-weight: 700; margin-top: 1.5em; margin-bottom: .5em; }
+  .doc-body h2 { font-size: 1.4em;  font-weight: 700; margin-top: 1.4em; margin-bottom: .5em;
+                 border-bottom: 1px solid var(--phoenix-border-color); padding-bottom: .25em; }
+  .doc-body h3 { font-size: 1.15em; font-weight: 700; margin-top: 1.2em; margin-bottom: .4em; }
+  .doc-body h4, .doc-body h5, .doc-body h6 { font-weight: 700; margin-top: 1em; margin-bottom: .4em; }
+  .doc-body p  { margin-bottom: .9em; }
+  .doc-body ul, .doc-body ol { padding-left: 1.4em; margin-bottom: .9em; }
+  .doc-body blockquote {
+    border-left: 4px solid var(--phoenix-primary);
+    padding: .5em 1em; margin: 1em 0;
+    background: var(--phoenix-primary-bg-subtle) !important;
+    border-radius: 0 .375rem .375rem 0;
+  }
+  .doc-body pre { padding: 1em; border-radius: .5rem; overflow-x: auto; }
+  .doc-body pre code { background: none !important; font-size: 1em; }
+  .doc-body table { width: 100%; border-collapse: collapse; margin-bottom: 1em; font-size: .9em; }
+  .doc-body th, .doc-body td { border: 1px solid var(--phoenix-border-color) !important; padding: .4em .7em; }
+
+  /* ── Modo escuro (fundo preto) ──────────────────────────── */
+  .doc-body.modo-escuro { background-color: #050505 !important; color: #e0e0e0 !important; }
+  .doc-body.modo-escuro * { color: inherit !important; background-color: transparent !important; }
+  .doc-body.modo-escuro pre,
+  .doc-body.modo-escuro code { background-color: #141414 !important; }
+
+  /* ── Paginação ──────────────────────────────────────────── */
+  .doc-body.pag-mode { overflow-y: scroll; scrollbar-width: none; }
+  .doc-body.pag-mode::-webkit-scrollbar { display: none; }
+  #rdr-pag-nav { display: none; }
+</style>
+
+<!-- tag preenchida pelo JS para sobrescrever font-size inline dos documentos colados -->
+<style id="rdr-dyn"></style>
+
+<div class="pb-5">
+  <div class="row g-4">
+    <div class="col-12">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb fs--1">
+          <li class="breadcrumb-item"><a href="{% url 'biblioteca:dashboard' %}">Biblioteca</a></li>
+          <li class="breadcrumb-item">
+            <a href="{% url 'biblioteca:lista' %}?categoria={{ doc.categoria.slug }}">{{ doc.categoria.nome }}</a>
+          </li>
+          <li class="breadcrumb-item active">{{ doc.titulo }}</li>
+        </ol>
+      </nav>
+
+      <!-- Header -->
+      <div class="card shadow-none border border-300 mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+              <h2 class="mb-2 text-900">{{ doc.titulo }}</h2>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="badge badge-phoenix badge-phoenix-secondary">{{ doc.categoria.nome }}</span>
+                <span id="lido-badge" class="badge badge-phoenix {% if doc.lido %}badge-phoenix-success{% else %}badge-phoenix-warning{% endif %}">
+                  {% if doc.lido %}✓ Lido{% if doc.data_leitura %} em {{ doc.data_leitura|date:"d/m/Y" }}{% endif %}{% else %}Pendente{% endif %}
+                </span>
+                {% if doc.prioridade >= 2 %}
+                  <span class="badge badge-phoenix badge-phoenix-danger">Urgente</span>
+                {% elif doc.prioridade == 1 %}
+                  <span class="badge badge-phoenix badge-phoenix-warning">Alta prioridade</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <a href="{% url 'biblioteca:editar' doc.slug %}" class="btn btn-phoenix-secondary btn-sm">
+                <i class="fa-solid fa-pencil me-1"></i> Editar
+              </a>
+              <form class="form-marcar-lido" method="post" action="{% url 'biblioteca:marcar_lido' doc.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm {% if doc.lido %}btn-success{% else %}btn-primary{% endif %}">
+                  {% if doc.lido %}✓ Lido — desmarcar{% else %}Marcar como lido{% endif %}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conteúdo -->
+      <div class="card shadow-none border border-300 mb-0">
+        <div class="card-body p-4 doc-body">
+          {% if doc.formato == 'html' %}
+            {{ doc.conteudo|safe }}
+          {% elif doc.formato == 'md' %}
+            <div id="md-output"></div>
+            {{ doc.conteudo|json_script:"md-raw" }}
+            <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+            <script>
+              (function () {
+                var raw = document.getElementById('md-raw');
+                var content = raw ? JSON.parse(raw.textContent) : '';
+                document.getElementById('md-output').innerHTML = marked.parse(content);
+              })();
+            </script>
+          {% else %}
+            <pre class="mb-0">{{ doc.conteudo }}</pre>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Nav de paginação (visível apenas quando modo páginas está ativo) -->
+      <div id="rdr-pag-nav" class="d-flex justify-content-center align-items-center gap-3 py-3 mb-4">
+        <button id="rdr-prev" class="btn btn-phoenix-secondary btn-sm px-3">← Anterior</button>
+        <span id="rdr-page-info" class="text-700 fw-semibold fs--1" style="min-width:70px;text-align:center;">1 / 1</span>
+        <button id="rdr-next" class="btn btn-phoenix-secondary btn-sm px-3">Próxima →</button>
+      </div>
+
+      <!-- Rodapé (oculto em modo páginas para não poluir) -->
+      <div id="rdr-footer" class="d-flex justify-content-between mt-3 mb-4">
+        <a href="{% url 'biblioteca:lista' %}?categoria={{ doc.categoria.slug }}"
+           class="btn btn-phoenix-secondary btn-sm">← Voltar</a>
+        <form class="form-marcar-lido" method="post" action="{% url 'biblioteca:marcar_lido' doc.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm {% if doc.lido %}btn-success{% else %}btn-primary{% endif %}">
+            {% if doc.lido %}✓ Já lido — desmarcar{% else %}Marcar como lido{% endif %}
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Painel de leitura ──────────────────────────────── -->
+<div id="rdr-wrap" style="position:fixed;bottom:1.75rem;right:1.75rem;z-index:1060;">
+  <div id="rdr-panel" class="card shadow border border-300 mb-2" style="display:none;min-width:215px;">
+    <div class="card-body py-3 px-3">
+
+      <p class="text-600 fs--2 fw-semibold mb-2" style="letter-spacing:.06em;">FONTE</p>
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <button id="rdr-dec" class="btn btn-phoenix-secondary btn-sm px-2" title="Diminuir fonte">A−</button>
+        <span id="rdr-val" class="text-900 fw-bold text-center" style="min-width:38px;"></span>
+        <button id="rdr-inc" class="btn btn-phoenix-secondary btn-sm px-2" title="Aumentar fonte">A+</button>
+      </div>
+
+      <p class="text-600 fs--2 fw-semibold mb-2" style="letter-spacing:.06em;">ESPAÇAMENTO</p>
+      <div class="d-flex gap-1 mb-3">
+        <button data-lh="1"   class="rdr-lh btn btn-phoenix-secondary btn-sm flex-fill">1×</button>
+        <button data-lh="1.5" class="rdr-lh btn btn-phoenix-secondary btn-sm flex-fill">1,5×</button>
+        <button data-lh="2"   class="rdr-lh btn btn-phoenix-secondary btn-sm flex-fill">2×</button>
+      </div>
+
+      <p class="text-600 fs--2 fw-semibold mb-2" style="letter-spacing:.06em;">LEITURA</p>
+      <div class="d-flex gap-1">
+        <button id="rdr-dk"      class="btn btn-phoenix-secondary btn-sm flex-fill" title="Fundo preto para máximo contraste">☾ Noturno</button>
+        <button id="rdr-pag-btn" class="btn btn-phoenix-secondary btn-sm flex-fill" title="Navegar página a página (← →)">⊞ Páginas</button>
+      </div>
+
+    </div>
+  </div>
+  <div class="d-flex justify-content-end">
+    <button id="rdr-toggle" class="btn btn-primary rounded-pill shadow-sm px-3"
+            style="font-size:.85rem;" title="Configurações de leitura">
+      <i class="fa-solid fa-text-height me-1"></i>Leitura
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var LS_F  = 'bib_font_size';
+  var LS_L  = 'bib_line_height';
+  var LS_DK = 'bib_dark';
+  var LS_PG = 'bib_pos_{{ doc.slug }}';
+  var MIN = 12, MAX = 26;
+
+  var body  = document.querySelector('.doc-body');
+  var dynSt = document.getElementById('rdr-dyn');
+  var fs    = parseFloat(localStorage.getItem(LS_F))  || 16;
+  var lh    = parseFloat(localStorage.getItem(LS_L))  || 1;
+  var dark  = localStorage.getItem(LS_DK) === '1';
+  var pagOn = false;
+  var curPage = 0;
+  var totalPages = 1;
+
+  /* ── Fonte (injeta <style> com !important para sobrescrever inline styles) ── */
+  function applyStyle() {
+    dynSt.textContent =
+      '.doc-body { font-size: ' + fs + 'pt !important; line-height: ' + lh + ' !important; }\n' +
+      '.doc-body * { font-size: inherit !important; line-height: inherit !important; }\n' +
+      '.doc-body h1 { font-size: 1.75em !important; }\n' +
+      '.doc-body h2 { font-size: 1.4em  !important; }\n' +
+      '.doc-body h3 { font-size: 1.15em !important; }\n' +
+      '.doc-body pre, .doc-body code { font-size: .875em !important; }';
+    document.getElementById('rdr-val').textContent = fs + 'pt';
+    document.querySelectorAll('.rdr-lh').forEach(function (b) {
+      var on = parseFloat(b.dataset.lh) === lh;
+      b.classList.toggle('btn-primary', on);
+      b.classList.toggle('btn-phoenix-secondary', !on);
+    });
+  }
+
+  /* ── Modo escuro ──────────────────────────────────────── */
+  function applyDark() {
+    body.classList.toggle('modo-escuro', dark);
+    var btn = document.getElementById('rdr-dk');
+    btn.classList.toggle('btn-primary', dark);
+    btn.classList.toggle('btn-phoenix-secondary', !dark);
+  }
+
+  /* ── Paginação ────────────────────────────────────────── */
+  function pageH() { return body.clientHeight; }
+
+  function calcPages() {
+    totalPages = Math.max(1, Math.ceil(body.scrollHeight / pageH()));
+  }
+
+  function showPageInfo() {
+    document.getElementById('rdr-page-info').textContent = (curPage + 1) + ' / ' + totalPages;
+    document.getElementById('rdr-prev').disabled = curPage === 0;
+    document.getElementById('rdr-next').disabled = curPage >= totalPages - 1;
+  }
+
+  function gotoPage(n) {
+    curPage = Math.max(0, Math.min(n, totalPages - 1));
+    body.scrollTop = curPage * pageH();
+    localStorage.setItem(LS_PG, curPage);
+    showPageInfo();
+  }
+
+  function enablePag() {
+    pagOn = true;
+    var h = Math.max(300, Math.round(window.innerHeight * 0.68)) + 'px';
+    body.style.height = h;
+    body.classList.add('pag-mode');
+    document.getElementById('rdr-pag-nav').style.display = 'flex';
+    document.getElementById('rdr-footer').style.display = 'none';
+    var btn = document.getElementById('rdr-pag-btn');
+    btn.classList.remove('btn-phoenix-secondary');
+    btn.classList.add('btn-primary');
+    setTimeout(function () {
+      calcPages();
+      var saved = parseInt(localStorage.getItem(LS_PG)) || 0;
+      gotoPage(Math.min(saved, totalPages - 1));
+    }, 60);
+  }
+
+  function disablePag() {
+    pagOn = false;
+    body.style.height = '';
+    body.classList.remove('pag-mode');
+    document.getElementById('rdr-pag-nav').style.display = 'none';
+    document.getElementById('rdr-footer').style.display = '';
+    var btn = document.getElementById('rdr-pag-btn');
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-phoenix-secondary');
+  }
+
+  /* ── Event handlers ───────────────────────────────────── */
+  document.getElementById('rdr-toggle').onclick = function () {
+    var p = document.getElementById('rdr-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  };
+
+  document.getElementById('rdr-dec').onclick = function () {
+    fs = Math.max(MIN, fs - 1);
+    localStorage.setItem(LS_F, fs);
+    applyStyle();
+    if (pagOn) { setTimeout(function () { calcPages(); gotoPage(curPage); }, 60); }
+  };
+  document.getElementById('rdr-inc').onclick = function () {
+    fs = Math.min(MAX, fs + 1);
+    localStorage.setItem(LS_F, fs);
+    applyStyle();
+    if (pagOn) { setTimeout(function () { calcPages(); gotoPage(curPage); }, 60); }
+  };
+  document.querySelectorAll('.rdr-lh').forEach(function (b) {
+    b.onclick = function () {
+      lh = parseFloat(b.dataset.lh);
+      localStorage.setItem(LS_L, lh);
+      applyStyle();
+      if (pagOn) { setTimeout(function () { calcPages(); gotoPage(curPage); }, 60); }
+    };
+  });
+
+  document.getElementById('rdr-dk').onclick = function () {
+    dark = !dark;
+    localStorage.setItem(LS_DK, dark ? '1' : '0');
+    applyDark();
+  };
+
+  document.getElementById('rdr-pag-btn').onclick = function () {
+    if (pagOn) disablePag(); else enablePag();
+  };
+  document.getElementById('rdr-prev').onclick = function () { gotoPage(curPage - 1); };
+  document.getElementById('rdr-next').onclick = function () { gotoPage(curPage + 1); };
+
+  /* Navegação por teclado no modo páginas */
+  document.addEventListener('keydown', function (e) {
+    if (!pagOn) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'ArrowDown') {
+      e.preventDefault(); gotoPage(curPage + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp') {
+      e.preventDefault(); gotoPage(curPage - 1);
+    }
+  });
+
+  /* ── Init ─────────────────────────────────────────────── */
+  applyStyle();
+  applyDark();
+
+  /* ── Marcar lido AJAX ─────────────────────────────────── */
+  document.querySelectorAll('.form-marcar-lido').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var csrf = form.querySelector('[name=csrfmiddlewaretoken]').value;
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf }
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        document.querySelectorAll('.form-marcar-lido button').forEach(function (btn) {
+          btn.textContent = d.lido ? '✓ Lido — desmarcar' : 'Marcar como lido';
+          btn.className = 'btn btn-sm ' + (d.lido ? 'btn-success' : 'btn-primary');
+        });
+        var badge = document.getElementById('lido-badge');
+        if (badge) {
+          badge.className = 'badge badge-phoenix ' + (d.lido ? 'badge-phoenix-success' : 'badge-phoenix-warning');
+          var dt = d.data ? new Date(d.data).toLocaleDateString('pt-BR') : '';
+          badge.textContent = d.lido ? ('✓ Lido' + (dt ? ' em ' + dt : '')) : 'Pendente';
+        }
+      });
+    });
+  });
+})();
+</script>
+{% endblock conteudo %}

@@ -1,0 +1,119 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<div class="pb-5">
+  <div class="row g-4">
+    <div class="col-12">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h2 class="mb-0 text-900">Documentos</h2>
+          <p class="text-700 mb-0">{{ documentos|length }} documento{{ documentos|length|pluralize }} encontrado{{ documentos|length|pluralize }}</p>
+        </div>
+        <a href="{% url 'biblioteca:novo' %}" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-plus me-1"></i> Novo Documento
+        </a>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card shadow-none border border-300 mb-4">
+        <div class="card-body py-3">
+          <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
+            <div>
+              <select name="categoria" class="form-select form-select-sm" style="min-width:180px;"
+                      onchange="this.form.submit()">
+                <option value="">Todas as categorias</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.slug }}" {% if cat.slug == cat_slug %}selected{% endif %}>
+                  {{ cat.nome }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <select name="status" class="form-select form-select-sm" style="min-width:140px;"
+                      onchange="this.form.submit()">
+                <option value="">Todos os status</option>
+                <option value="lido"     {% if status == 'lido' %}selected{% endif %}>✓ Lidos</option>
+                <option value="pendente" {% if status == 'pendente' %}selected{% endif %}>⏳ Pendentes</option>
+              </select>
+            </div>
+            {% if cat_slug or status %}
+            <a href="{% url 'biblioteca:lista' %}" class="btn btn-sm btn-phoenix-secondary">
+              Limpar filtros
+            </a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="card shadow-none border border-300">
+        <div class="card-body pt-0 pb-3">
+          <div class="table-responsive scrollbar">
+            <table class="table table-sm fs--1 mb-0 border-top border-200">
+              <thead>
+                <tr>
+                  <th class="ps-3" style="width:50px;">Ord.</th>
+                  <th>Documento</th>
+                  <th>Categoria</th>
+                  <th>Prioridade</th>
+                  <th>Status</th>
+                  <th class="text-end pe-3">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for doc in documentos %}
+                <tr>
+                  <td class="ps-3 text-700">{{ doc.ordem }}</td>
+                  <td class="py-2">
+                    <a href="{% url 'biblioteca:detalhe' doc.slug %}"
+                       class="fw-semibold text-900 text-decoration-none">
+                      {{ doc.titulo }}
+                    </a>
+                  </td>
+                  <td class="py-2">
+                    <a href="{% url 'biblioteca:lista' %}?categoria={{ doc.categoria.slug }}"
+                       class="text-700 text-decoration-none">
+                      {{ doc.categoria.nome }}
+                    </a>
+                  </td>
+                  <td class="py-2">
+                    {% if doc.prioridade >= 2 %}
+                      <span class="badge badge-phoenix badge-phoenix-danger">Urgente</span>
+                    {% elif doc.prioridade == 1 %}
+                      <span class="badge badge-phoenix badge-phoenix-warning">Alta</span>
+                    {% else %}
+                      <span class="badge badge-phoenix badge-phoenix-secondary">Normal</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-2">
+                    {% if doc.lido %}
+                      <span class="badge badge-phoenix badge-phoenix-success">
+                        ✓ Lido{% if doc.data_leitura %} · {{ doc.data_leitura|date:"d/m/y" }}{% endif %}
+                      </span>
+                    {% else %}
+                      <span class="badge badge-phoenix badge-phoenix-warning">Pendente</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end pe-3 py-2">
+                    <a href="{% url 'biblioteca:detalhe' doc.slug %}"
+                       class="btn btn-sm btn-phoenix-primary">Ler</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-5 text-700">
+                    Nenhum documento encontrado para os filtros selecionados.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock conteudo %}

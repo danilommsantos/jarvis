@@ -1,0 +1,129 @@
+{% extends "main/base.html" %}
+{% block conteudo %}
+<div class="pb-5">
+  <div class="row g-4">
+    <div class="col-12 col-xl-10">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb fs--1">
+          <li class="breadcrumb-item"><a href="{% url 'biblioteca:dashboard' %}">Biblioteca</a></li>
+          {% if doc %}
+          <li class="breadcrumb-item"><a href="{% url 'biblioteca:detalhe' doc.slug %}">{{ doc.titulo }}</a></li>
+          <li class="breadcrumb-item active">Editar</li>
+          {% else %}
+          <li class="breadcrumb-item active">Novo Documento</li>
+          {% endif %}
+        </ol>
+      </nav>
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h2 class="mb-0 text-900">{{ titulo_pagina }}</h2>
+          <p class="text-700 mb-0">
+            {% if doc %}Edite os dados do documento{% else %}Preencha os dados para cadastrar um novo documento{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row g-4">
+
+          <!-- Coluna esquerda: metadados -->
+          <div class="col-12 col-lg-4">
+
+            <div class="card shadow-none border border-300 mb-3">
+              <div class="card-header border-bottom border-300 py-3">
+                <h6 class="mb-0 text-900">Identificação</h6>
+              </div>
+              <div class="card-body">
+
+                <div class="mb-3">
+                  <label class="form-label fs--1 fw-semibold text-700">{{ form.titulo.label }}</label>
+                  {{ form.titulo }}
+                  {% if form.titulo.errors %}
+                  <div class="text-danger fs--2 mt-1">{{ form.titulo.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fs--1 fw-semibold text-700">{{ form.categoria.label }}</label>
+                  {{ form.categoria }}
+                  {% if form.categoria.errors %}
+                  <div class="text-danger fs--2 mt-1">{{ form.categoria.errors.0 }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fs--1 fw-semibold text-700">{{ form.formato.label }}</label>
+                  {{ form.formato }}
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-6">
+                    <label class="form-label fs--1 fw-semibold text-700">{{ form.ordem.label }}</label>
+                    {{ form.ordem }}
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fs--1 fw-semibold text-700">Prioridade</label>
+                    {{ form.prioridade }}
+                    <small class="text-700 fs--2">0=normal · 1=alta · 2=urgente</small>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="card shadow-none border border-300">
+              <div class="card-header border-bottom border-300 py-3">
+                <h6 class="mb-0 text-900">Ordenamento</h6>
+              </div>
+              <div class="card-body">
+                <label class="form-label fs--1 fw-semibold text-700">{{ form.data_inclusao.label }}</label>
+                {{ form.data_inclusao }}
+                <small class="text-700 fs--2 d-block mt-1">
+                  Usada para ordenar a lista de leitura
+                </small>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Coluna direita: conteúdo -->
+          <div class="col-12 col-lg-8">
+            <div class="card shadow-none border border-300 h-100">
+              <div class="card-header border-bottom border-300 d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 text-900">{{ form.conteudo.label }}</h6>
+                <small class="text-700">Markdown ou HTML</small>
+              </div>
+              <div class="card-body pb-3">
+                {{ form.conteudo }}
+                {% if form.conteudo.errors %}
+                <div class="text-danger fs--2 mt-1">{{ form.conteudo.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /row -->
+
+        <!-- Ações -->
+        <div class="d-flex gap-2 justify-content-end mt-4">
+          {% if doc %}
+          <a href="{% url 'biblioteca:detalhe' doc.slug %}" class="btn btn-phoenix-secondary">Cancelar</a>
+          {% else %}
+          <a href="{% url 'biblioteca:lista' %}" class="btn btn-phoenix-secondary">Cancelar</a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">
+            {% if doc %}Salvar alterações{% else %}Cadastrar documento{% endif %}
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock conteudo %}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from django.utils import timezone
 
 
 class Categoria(models.Model):
@@ -47,6 +48,11 @@ class Documento(models.Model):
         'Prioridade',
         default=0,
         help_text='0 = normal, 1 = alta, 2 = urgente',
+    )
+    data_inclusao = models.DateField(
+        'Data de Inclusão',
+        default=timezone.localdate,
+        help_text='Data usada para ordenar a lista de leitura',
     )
     lido = models.BooleanField('Lido', default=False)
     data_leitura = models.DateTimeField('Data de Leitura', null=True, blank=True)
