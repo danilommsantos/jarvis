@@ -373,6 +373,21 @@ def realizar_triagem(request, pk):
             messages.success(request, "Varredura de matérias concluída com sucesso!")
             return redirect('mppf:realizar_triagem', pk=triagem.id)
 
+        elif form_name == "colar_da_clipboard":
+            import pyperclip
+            texto_clipboard = pyperclip.paste().strip()
+            if texto_clipboard:
+                texto_limpo = limpar_texto(texto_clipboard)
+                triagem.texto_despacho_admissibilidade = corrige_texto_pdf(texto=texto_limpo)
+                triagem.foi_editada_DA = True
+                triagem.atualizar_paginas()
+                triagem.conferir_materias_no_texto()
+                triagem.save()
+                messages.success(request, "Texto da DA substituído pelo conteúdo da área de transferência.")
+            else:
+                messages.warning(request, "Área de transferência vazia.")
+            return redirect('mppf:realizar_triagem', pk=triagem.id)
+
         elif form_name == "baixar_DA":
             # 1. Tenta sincronizar peças se não há nenhuma DA ainda
             if not processo.pecas.filter(tipo_peca__sigla="DA").exists():

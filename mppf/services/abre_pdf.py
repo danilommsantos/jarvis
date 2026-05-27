@@ -1,4 +1,4 @@
-from .utils import esta_aberta_a_janela, existe_o_arquivo, muda_foco_para_janela, pdf_mais_recente, abre_arquivo
+from .utils import esta_aberta_a_janela, existe_o_arquivo, pdf_mais_recente
 from django.db.models.functions import Length
 from mppf.models import ExpressaoMateria, ExpressaoMarcador
 from nup_poder_judiciario import NumeroUnicoProcesso as Nup
@@ -10,7 +10,10 @@ import os
 import pyautogui
 import PyPDF2
 import re
+import subprocess
 import time
+
+PDFXCHANGE_EXE = r'C:\Pendrive\Programas\Tracker Software\PDF Viewer\PDFXCview.exe'
 
 # ==========================================
 # NOVA SEÇÃO: Controle de Arquivos Anotados
@@ -259,7 +262,152 @@ def negritar_marcadores(pdf):
         raise e
 
 
-def abre_pdf_do_processo(processo, pasta_processos):    
+def fechar_documento_pdfxchange():
+    """Fecha o documento ativo no PDF-XChange Viewer (Ctrl+W) sem fechar a aplicação."""
+    import ctypes
+    import win32api
+    import win32con
+    import win32gui
+
+    hwnd = None
+
+    def _cb(h, _):
+        nonlocal hwnd
+        if win32gui.IsWindowVisible(h) and 'PDF-XChange Viewer' in win32gui.GetWindowText(h):
+            hwnd = h
+        return True
+
+    win32gui.EnumWindows(_cb, None)
+
+    if not hwnd:
+        print('[pdf] PDF-XChange Viewer não encontrado — nada a fechar.')
+        return
+
+    # Traz ao foco sem alterar tamanho: só restaura se estiver minimizada
+    if ctypes.windll.user32.IsIconic(hwnd):
+        ctypes.windll.user32.ShowWindow(hwnd, 9)   # SW_RESTORE (apenas se minimizada)
+    else:
+        ctypes.windll.user32.ShowWindow(hwnd, 5)   # SW_SHOW (mantém maximizada/normal)
+    ctypes.windll.user32.SetForegroundWindow(hwnd)
+    win32api.keybd_event(0x11, 0, 0, 0)                          # Ctrl ↓
+    win32api.keybd_event(ord('W'), 0, 0, 0)                      # W ↓
+    win32api.keybd_event(ord('W'), 0, win32con.KEYEVENTF_KEYUP, 0)  # W ↑
+    win32api.keybd_event(0x11, 0, win32con.KEYEVENTF_KEYUP, 0)  # Ctrl ↑
+    print('[pdf] documento ativo fechado.')
+
+
+def _hwnd_pdfxchange():
+    """Retorna o handle da janela principal do PDF-XChange Viewer, ou None."""
+    import win32gui
+    result = []
+
+    def _cb(h, _):
+        if win32gui.IsWindowVisible(h) and 'PDF-XChange Viewer' in win32gui.GetWindowText(h):
+            result.append(h)
+        return True
+
+    win32gui.EnumWindows(_cb, None)
+    return result[0] if result else None
+
+
+def _scroll_marcador_topo(hwnd):
+    """
+    Rola o painel DSUI:BookmarksView para que o marcador da DA
+    (que o PDF-XChange deixa na parte inferior) apareça no topo.
+
+    Estratégia: envia WM_VSCROLL / SB_LINEDOWN ao DSUI:BookmarksView
+    tantas vezes quantas linhas cabem no painel (altura ÷ altura estimada
+    do item), movendo o marcador selecionado do fundo para o topo.
+    """
+    import ctypes
+    import win32gui
+
+    WM_VSCROLL  = 0x0115
+    SB_LINEDOWN = 1
+    ITEM_HEIGHT_PX = 20   # altura estimada de cada marcador em pixels
+
+    bookmarks_hwnd = None
+
+    def _find_bm(h, _):
+        nonlocal bookmarks_hwnd
+        if win32gui.GetClassName(h) == 'DSUI:BookmarksView':
+            bookmarks_hwnd = h
+        return True
+
+    win32gui.EnumChildWindows(hwnd, _find_bm, None)
+    if not bookmarks_hwnd:
+        print('[pdf] DSUI:BookmarksView não encontrado.')
+        return
+
+    rect   = win32gui.GetWindowRect(bookmarks_hwnd)
+    altura = rect[3] - rect[1]
+    n      = max(1, (altura // ITEM_HEIGHT_PX) - 1)
+
+    for _ in range(n):
+        ctypes.windll.user32.PostMessageW(bookmarks_hwnd, WM_VSCROLL, SB_LINEDOWN, 0)
+
+    print(f'[pdf] Marcador da DA rolado para o topo ({n} linhas).')
+
+
+def _navegar_pagina(pagina):
+    """
+    Aguarda o documento carregar e navega para a página via Ctrl+Shift+N.
+    Roda em thread separada para não bloquear.
+    """
+    import ctypes
+    import win32api
+    import win32con
+
+    time.sleep(1.5)  # aguarda o PDF carregar na aba
+
+    hwnd = _hwnd_pdfxchange()
+    if not hwnd:
+        return
+
+    ctypes.windll.user32.SetForegroundWindow(hwnd)
+    time.sleep(0.15)
+
+    # Ctrl+Shift+N → diálogo "Ir para página"
+    for vk, down in [
+        (0x11, True), (0x10, True), (0x4E, True),   # Ctrl+Shift+N press
+        (0x4E, False), (0x10, False), (0x11, False),  # release
+    ]:
+        flag = 0 if down else win32con.KEYEVENTF_KEYUP
+        win32api.keybd_event(vk, 0, flag, 0)
+
+    time.sleep(0.25)  # aguarda o diálogo abrir
+
+    # Digita o número e confirma
+    for char in str(pagina):
+        vk = ord(char)
+        win32api.keybd_event(vk, 0, 0, 0)
+        win32api.keybd_event(vk, 0, win32con.KEYEVENTF_KEYUP, 0)
+
+    win32api.keybd_event(win32con.VK_RETURN, 0, 0, 0)
+    win32api.keybd_event(win32con.VK_RETURN, 0, win32con.KEYEVENTF_KEYUP, 0)
+    print(f'[pdf] navegado para página {pagina}.')
+
+    # Aguarda o PDF-XChange sincronizar a seleção do marcador e rola para o topo
+    time.sleep(0.8)
+    _scroll_marcador_topo(hwnd)
+
+
+def abre_pdf_na_pagina(caminho, pagina):
+    """
+    Abre o PDF na instância existente do PDF-XChange (sem criar nova janela)
+    e navega para a página da DA em background.
+    """
+    import threading
+
+    fechar_documento_pdfxchange()
+
+    # os.startfile reutiliza a instância já aberta — sem nova janela, sem redimensionamento
+    os.startfile(str(caminho))
+
+    threading.Thread(target=_navegar_pagina, args=(pagina,), daemon=True).start()
+
+
+def abre_pdf_do_processo(processo, pasta_processos):
     print(processo.numero)
     caminho = pdf_mais_recente(diretorio=pasta_processos, expressao=processo.numero)
     print(caminho)
@@ -267,15 +415,9 @@ def abre_pdf_do_processo(processo, pasta_processos):
         print('O arquivo já está aberto.')
     elif existe_o_arquivo(caminho):
         negritar_marcadores(pdf=caminho)
-        # negritar_bookmarks(caminho)
         destaca_texto_pdf(pdf_path=caminho)
-        muda_foco_para_janela(titulo='PDF-XChange Viewer')
-        time.sleep(1)
-        print('Digitado ctrl+w')
-        pyautogui.hotkey('ctrl', 'w')
-        time.sleep(0.5)
-        abre_arquivo(caminho=caminho)
-        abre_a_pagina_da_DA(caminho=caminho)
-        # maximiza_aba()
+        pagina = pagina_da_DA(caminho=caminho)
+        print(f'Abrindo na página {pagina}...')
+        abre_pdf_na_pagina(caminho=caminho, pagina=pagina)
     else:
         print(processo.numero, 'não existe em', pasta_processos)

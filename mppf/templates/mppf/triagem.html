@@ -74,6 +74,16 @@
                             <i class="fas fa-copy"></i>
                         </button>
 
+                        <form method="POST" class="m-0">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_name" value="colar_da_clipboard">
+                            <button type="submit" class="btn btn-outline-warning btn-sm"
+                                    data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                    title="Substituir DA pelo texto da área de transferência">
+                                <i class="fas fa-paste"></i>
+                            </button>
+                        </form>
+
                         <button class="btn btn-outline-primary btn-sm"
                                 data-bs-target="#modalEditarDA"
                                 title="Editar texto da DA"
