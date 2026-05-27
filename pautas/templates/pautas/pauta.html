@@ -99,6 +99,7 @@
                                                 <span class="fa fa-headset fs-8"></span> 
                                             </span>
                                         {% endif %}
+                                        {% if revisao.processo.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}
                                         <a href="{% url 'pautas:revisar_processo' revisao.pk %}">
                                             {{ revisao.processo.fase_completa }} - {{ revisao.processo.numero }}
                                         </a>

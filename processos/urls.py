@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path('dashboard', views.dashboard, name='dashboard'),
     path('lista_processos/', views.lista_processos, name='lista_processos'),
+    path('processo/<int:pk>/', views.processo_detalhe, name='processo_detalhe'),
     path('atualizar_acervo/', views.atualizar_acervo, name='atualizar_acervo'),
     path('atualizar_json_processos/', views.atualizar_json_processos, name='atualizar_json_processos'),
     path('baixar_texto_DA_AIRRs/', views.baixar_texto_DA_AIRRs, name='baixar_texto_DA_AIRRs'),

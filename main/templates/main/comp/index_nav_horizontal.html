@@ -30,6 +30,14 @@
         </div>
         <ul class="navbar-nav navbar-nav-icons flex-row">
             <!-- ------------- -->
+            <!-- Busca Geral   -->
+            <!-- ------------- -->
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchBoxModal">
+                    <span data-feather="search" style="height:14px;width:14px;"></span>
+                </a>
+            </li>
+            <!-- ------------- -->
             <!-- Controle Tema -->
             <!-- ------------- -->
             <li class="nav-item">
@@ -65,10 +73,42 @@
                     >
                 </div>
             </li>
-
         </ul>
     </div>
 </nav>
+
+<!-- ======================== -->
+<!-- Modal de Busca (Phoenix) -->
+<!-- ======================== -->
+<div class="modal fade" id="searchBoxModal" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="true" data-phoenix-modal="data-phoenix-modal"
+     style="--phoenix-backdrop-opacity: 1;">
+    <div class="modal-dialog">
+        <div class="modal-content mt-15 rounded-pill">
+            <div class="modal-body p-0">
+                <div class="search-box navbar-top-search-box" style="width: auto;">
+                    <form class="position-relative" action="{% url 'busca' %}" method="get">
+                        <input
+                            class="form-control search-input rounded-pill form-control-lg"
+                            type="search"
+                            name="q"
+                            placeholder="Buscar no J.A.R.V.I.S..."
+                            aria-label="Busca geral"
+                            autocomplete="off"
+                            autofocus
+                        />
+                        <span class="fas fa-search search-box-icon"></span>
+                    </form>
+                    <div class="btn-close position-absolute end-0 top-50 translate-middle cursor-pointer shadow-none"
+                         data-bs-dismiss="modal">
+                        <button class="btn btn-link p-0" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     var topNavSlim = document.querySelector("#topNavSlim");
     var navbarVertical = document.querySelector(".navbar-vertical");
@@ -80,4 +120,9 @@
         "slim"
     );
     topNavSlim.setAttribute("data-navbar-appearance", "darker");
+
+    // Foca o input quando o modal abre
+    document.getElementById('searchBoxModal').addEventListener('shown.bs.modal', function () {
+        this.querySelector('input[name="q"]').focus();
+    });
 </script>

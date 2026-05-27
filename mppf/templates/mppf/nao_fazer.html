@@ -19,10 +19,10 @@
                         {% for triagem in materia.triagens_filtradas %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <span>
+                                {% if triagem.processo.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}
                                 <a href="{% url 'mppf:realizar_triagem' triagem.id %}">
                                     {{ triagem.processo.fase_completa }} - {{ triagem.processo.numero }}
                                 </a>
-                                
                             </span>
                             {% comment %} <span class="text-muted small">Páginas: {{ triagem.paginas }}</span> {% endcomment %}
                         </li>

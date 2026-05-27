@@ -1,0 +1,342 @@
+{% extends 'main/base.html' %}
+
+{% block conteudo %}
+<div class="mb-9">
+
+    {# ─── Cabeçalho ───────────────────────────────────────────── #}
+    <div class="row g-3 mb-4 align-items-center justify-content-between">
+        <div class="col-auto">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-9">
+                    <li class="breadcrumb-item"><a href="{% url 'lista_processos' %}">Acervo</a></li>
+                    <li class="breadcrumb-item active">{{ processo.numero }}</li>
+                </ol>
+            </nav>
+            <h2 class="mb-0">
+                {% if processo.impedido %}<span class="badge bg-danger me-2 fs-8">Impedido</span>{% endif %}{{ processo.fase_completa }} - {{ processo.numero }}
+            </h2>
+        </div>
+        <div class="col-auto d-flex gap-2">
+            <a href="{% url 'lista_processos' %}" class="btn btn-phoenix-secondary btn-sm">
+                <span class="fas fa-arrow-left me-1"></span>Voltar
+            </a>
+            {% if triagem %}
+            <a href="{% url 'mppf:realizar_triagem' triagem.pk %}" class="btn btn-phoenix-info btn-sm">
+                <span class="fas fa-filter me-1"></span>Ver Triagem MPPF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        {# ─── Coluna principal ────────────────────────────────── #}
+        <div class="col-lg-8">
+
+            {# Identificação #}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><span class="fas fa-id-card me-2 text-primary"></span>Identificação</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Número</p>
+                            <p class="fw-bold mb-0">{{ processo.numero }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Fase</p>
+                            <p class="fw-bold mb-0">{{ processo.fase_completa }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Classe</p>
+                            <p class="mb-0">{{ processo.classe.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Órgão Julgador</p>
+                            <p class="mb-0">{{ processo.orgao_julgador.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Relator</p>
+                            <p class="mb-0">{{ processo.relator.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Data de Entrada</p>
+                            <p class="mb-0">{{ processo.data_entrada|date:"d/m/Y"|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Responsável</p>
+                            <p class="mb-0">{{ processo.responsavel.nome_completo|default:"Não atribuído" }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">No Acervo</p>
+                            <p class="mb-0">
+                                {% if processo.esta_no_acervo %}
+                                <span class="badge bg-success">Sim</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Minuta #}
+            {% if processo.tipo_minuta or processo.situacao_minuta or processo.movimentacao_interna %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><span class="fas fa-file-alt me-2 text-warning"></span>Minuta</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <p class="fs-9 text-body-tertiary mb-1">Tipo</p>
+                            <p class="mb-0">{{ processo.tipo_minuta.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="fs-9 text-body-tertiary mb-1">Situação</p>
+                            <p class="mb-0">{{ processo.situacao_minuta.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="fs-9 text-body-tertiary mb-1">Movimentação Interna</p>
+                            <p class="mb-0">{{ processo.movimentacao_interna.nome|default:"—" }}</p>
+                        </div>
+                        {% if processo.andamento %}
+                        <div class="col-12">
+                            <p class="fs-9 text-body-tertiary mb-1">Andamento</p>
+                            <p class="mb-0">{{ processo.andamento }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Partes e Advogados #}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><span class="fas fa-users me-2 text-info"></span>Partes e Advogados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% if processo.partes_autoras.exists %}
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Partes Autoras</p>
+                            {% for parte in processo.partes_autoras.all %}
+                            <p class="mb-0">{{ parte.nome }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if processo.partes_res.exists %}
+                        <div class="col-sm-6">
+                            <p class="fs-9 text-body-tertiary mb-1">Partes Rés</p>
+                            {% for parte in processo.partes_res.all %}
+                            <p class="mb-0">{{ parte.nome }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if processo.advogados.exists %}
+                        <div class="col-12">
+                            <p class="fs-9 text-body-tertiary mb-1">Advogados</p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for adv in processo.advogados.all %}
+                                <span class="badge bg-phoenix-secondary">{{ adv.nome }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if processo.assuntos.exists %}
+                        <div class="col-12">
+                            <p class="fs-9 text-body-tertiary mb-1">Assuntos</p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for assunto in processo.assuntos.all %}
+                                <span class="badge bg-phoenix-primary">{{ assunto.nome }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Observações #}
+            {% if processo.obs %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><span class="fas fa-sticky-note me-2 text-secondary"></span>Observações</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1 text-body-secondary fs-9">Por: {{ processo.obs_responsavel.nome_completo|default:"—" }}</p>
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ processo.obs }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Peças #}
+            {% if processo.pecas.exists %}
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <h5 class="mb-0"><span class="fas fa-paperclip me-2 text-secondary"></span>Peças</h5>
+                    <span class="badge bg-secondary ms-auto">{{ processo.pecas.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm fs-9 mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Tipo</th>
+                                    <th>Data Publicação</th>
+                                    <th class="text-end pe-3">Texto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for peca in processo.pecas.all %}
+                                <tr>
+                                    <td class="ps-3">{{ peca.tipo_peca.nome|default:"Desconhecido" }}</td>
+                                    <td>{{ peca.data_publicacao|date:"d/m/Y" }}</td>
+                                    <td class="text-end pe-3">
+                                        {% if peca.conteudo_texto %}
+                                        <span class="badge bg-success">Disponível</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        {# ─── Coluna lateral: conexões ────────────────────────── #}
+        <div class="col-lg-4">
+
+            {# MPPF #}
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="fas fa-filter text-info"></span>
+                    <h6 class="mb-0">Triagem MPPF</h6>
+                </div>
+                <div class="card-body">
+                    {% if triagem %}
+                    <p class="fs-9 text-body-tertiary mb-1">Resultado</p>
+                    <p class="mb-2">
+                        {% if triagem.resultado %}
+                        <span class="badge bg-{{ triagem.resultado.cor_classe }}">{{ triagem.resultado.nome }}</span>
+                        {% else %}
+                        <span class="text-body-tertiary">Sem resultado</span>
+                        {% endif %}
+                    </p>
+                    <p class="fs-9 text-body-tertiary mb-1">Qtd. Recursos</p>
+                    <p class="mb-2">{{ triagem.quantidade_de_recursos|default:"—" }}</p>
+                    <p class="fs-9 text-body-tertiary mb-1">Páginas Estimadas</p>
+                    <p class="mb-3">{{ triagem.paginas|default:"—" }}</p>
+                    <a href="{% url 'mppf:realizar_triagem' triagem.pk %}" class="btn btn-phoenix-info btn-sm w-100">
+                        <span class="fas fa-filter me-1"></span>Abrir Triagem
+                    </a>
+                    {% else %}
+                    <p class="text-body-tertiary fs-9 mb-0">Sem triagem MPPF cadastrada.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Pautas #}
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="fas fa-calendar-alt text-warning"></span>
+                    <h6 class="mb-0">Pautas</h6>
+                    {% if revisoes %}<span class="badge bg-warning text-dark ms-auto">{{ revisoes.count }}</span>{% endif %}
+                </div>
+                <div class="card-body {% if revisoes %}p-0{% endif %}">
+                    {% if revisoes %}
+                    <ul class="list-group list-group-flush">
+                        {% for rev in revisoes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{% url 'pautas:pauta' rev.pauta.pk %}" class="fw-semibold text-warning text-decoration-none fs-9">
+                                    {{ rev.pauta.titulo }}
+                                </a>
+                                {% if rev.minutante %}
+                                <p class="fs-10 text-body-tertiary mb-0">{{ rev.minutante.nome_completo }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-column gap-1 align-items-end">
+                                {% for s in rev.status.all %}
+                                <span class="badge bg-secondary fs-10">{{ s.nome }}</span>
+                                {% endfor %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-body-tertiary fs-9 mb-0">Não apareceu em nenhuma pauta.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Memoriais #}
+            {% if memoriais %}
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="fas fa-scroll text-success"></span>
+                    <h6 class="mb-0">Memoriais</h6>
+                    <span class="badge bg-success ms-auto">{{ memoriais.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for mem in memoriais %}
+                        <li class="list-group-item">
+                            <p class="fs-9 fw-semibold mb-1">{{ mem.pauta.titulo }}</p>
+                            {% if mem.resumo_memorial %}
+                            <p class="fs-10 text-body-secondary mb-1">{{ mem.resumo_memorial|truncatewords:20 }}</p>
+                            {% endif %}
+                            {% if mem.link_memorial %}
+                            <a href="{{ mem.link_memorial }}" target="_blank" class="fs-10">
+                                <span class="fas fa-external-link-alt me-1"></span>Ver memorial
+                            </a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Atendimentos #}
+            {% if atendimentos %}
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="fas fa-headset text-primary"></span>
+                    <h6 class="mb-0">Atendimentos</h6>
+                    <span class="badge bg-primary ms-auto">{{ atendimentos.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for at in atendimentos %}
+                        <li class="list-group-item">
+                            <p class="fs-9 fw-semibold mb-1">{{ at.data_horario|date:"d/m/Y H:i" }}</p>
+                            <p class="fs-10 text-body-tertiary mb-1">{{ at.pauta.titulo }}</p>
+                            {% if at.resumo_observacoes %}
+                            <p class="fs-10 text-body-secondary mb-0">{{ at.resumo_observacoes|truncatewords:15 }}</p>
+                            {% endif %}
+                            {% if at.link_audio %}
+                            <a href="{{ at.link_audio }}" target="_blank" class="fs-10">
+                                <span class="fas fa-headphones me-1"></span>Ouvir áudio
+                            </a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

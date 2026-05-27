@@ -20,9 +20,11 @@ class Responsavel(BaseModel):
 
 class Advogado(BaseModel):
     nome = models.CharField(max_length=255, unique=True)
+    gera_impedimento = models.BooleanField("Gera Impedimento?", default=False)
+
     def __str__(self): return self.nome
     class Meta:
-        ordering = ["nome"]       
+        ordering = ["nome"]
 
 
 class Parte(BaseModel):
@@ -114,6 +116,7 @@ class Processo(BaseModel):
     
     # Informações de estado
     esta_no_acervo = models.BooleanField(default=False)
+    impedido = models.BooleanField("Impedido?", default=False)
 
     def sincronizar_pecas(self):
         """

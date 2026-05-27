@@ -19,7 +19,8 @@
                 {% for triagem in triagens %}
                 <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td>
+                    <td class="text-end">
+                        {% if triagem.processo.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}
                         <a href="{% url 'mppf:realizar_triagem' triagem.id %}">
                             {{ triagem.processo.fase_completa|default:"" }} - {{ triagem.processo.numero }}
                         </a>

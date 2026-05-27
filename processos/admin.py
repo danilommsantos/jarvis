@@ -67,7 +67,9 @@ class ParteAdmin(admin.ModelAdmin):
 
 @admin.register(Advogado)
 class AdvogadoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'gera_impedimento')
     search_fields = ['nome']
+    list_filter = ('gera_impedimento',)
 
 
 # Registra os modelos auxiliares

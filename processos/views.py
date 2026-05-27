@@ -81,6 +81,42 @@ def baixar_texto(request, pk):
     return redirect(request.META.get('HTTP_REFERER', '/admin/processos/peca/'))
 
 
+def processo_detalhe(request, pk):
+    processo = get_object_or_404(
+        Processo.objects.select_related(
+            'responsavel', 'relator', 'orgao_julgador', 'classe',
+            'movimentacao_interna', 'tipo_minuta', 'situacao_minuta',
+            'obs_responsavel',
+        ).prefetch_related(
+            'partes_autoras', 'partes_res', 'advogados', 'assuntos',
+            'pecas__tipo_peca',
+        ),
+        pk=pk,
+    )
+
+    try:
+        triagem = processo.triagem_mppf
+    except Exception:
+        triagem = None
+
+    revisoes = (
+        processo.revisoes_pauta
+        .select_related('pauta', 'minutante')
+        .prefetch_related('status')
+        .order_by('-pauta__data_inicio')
+    )
+    memoriais = processo.memoriais.select_related('pauta').all()
+    atendimentos = processo.atendimentos.select_related('pauta').order_by('-data_horario')
+
+    return render(request, 'processos/processo_detalhe.html', {
+        'processo': processo,
+        'triagem': triagem,
+        'revisoes': revisoes,
+        'memoriais': memoriais,
+        'atendimentos': atendimentos,
+    })
+
+
 def baixar_texto_DA_AIRRs(request):
     tudo = request.GET.get('tudo') == '1'
     processos = Processo.objects.filter(

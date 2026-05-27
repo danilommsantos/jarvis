@@ -1,0 +1,223 @@
+{% extends 'main/base.html' %}
+
+{% block conteudo %}
+<div class="mb-9">
+    <div class="row g-3 mb-4 align-items-center justify-content-between">
+        <div class="col-auto">
+            <h2 class="mb-0">Resultados da Busca</h2>
+            {% if q %}
+            <p class="text-body-tertiary mb-0">
+                {% if total %}
+                    {{ total }} resultado{{ total|pluralize }} para <strong>"{{ q }}"</strong>
+                {% else %}
+                    Nenhum resultado para <strong>"{{ q }}"</strong>
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+        <div class="col-auto">
+            <form class="d-flex" action="{% url 'busca' %}" method="get">
+                <div class="search-box">
+                    <div class="position-relative">
+                        <input
+                            class="form-control search-input"
+                            type="search"
+                            name="q"
+                            value="{{ q }}"
+                            placeholder="Nova busca..."
+                            autofocus
+                        />
+                        <span class="fas fa-search search-box-icon"></span>
+                    </div>
+                </div>
+                <button class="btn btn-primary ms-2" type="submit">Buscar</button>
+            </form>
+        </div>
+    </div>
+
+    {% if not q %}
+    <div class="text-center py-9 text-body-tertiary">
+        <span class="fas fa-search fs-3 mb-3 d-block"></span>
+        <p>Digite algo na barra de busca para pesquisar em todo o J.A.R.V.I.S.</p>
+    </div>
+    {% elif total == 0 %}
+    <div class="text-center py-9 text-body-tertiary">
+        <span class="fas fa-search fs-3 mb-3 d-block"></span>
+        <p>Nenhum resultado encontrado para <strong>"{{ q }}"</strong>.</p>
+        <p class="fs-9">Tente palavras-chave diferentes ou verifique a ortografia.</p>
+    </div>
+    {% else %}
+
+    {# ─── PROCESSOS ─────────────────────────────────────────── #}
+    {% if processos %}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <span class="fas fa-folder-open text-primary"></span>
+            <h5 class="mb-0">Processos</h5>
+            <span class="badge bg-primary ms-auto">{{ processos.count }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover fs-9 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-end pe-3">Número / Fase</th>
+                            <th>Responsável</th>
+                            <th>Relator</th>
+                            <th>Classe</th>
+                            <th class="text-end pe-3">Entrada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in processos %}
+                        <tr>
+                            <td class="text-end pe-3">
+                                {% if p.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}
+                                <a href="{% url 'processo_detalhe' p.pk %}" class="fw-bold text-primary text-decoration-none">
+                                    {{ p.fase_completa }} - {{ p.numero }}
+                                </a>
+                            </td>
+                            <td class="text-body-secondary">{{ p.responsavel.nome_completo|default:"—" }}</td>
+                            <td class="text-body-secondary">{{ p.relator.sigla|default:"—" }}</td>
+                            <td class="text-body-secondary">{{ p.classe.nome|default:"—" }}</td>
+                            <td class="text-end pe-3 text-body-tertiary">{{ p.data_entrada|date:"d/m/Y"|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── PAUTAS ─────────────────────────────────────────────── #}
+    {% if pautas %}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <span class="fas fa-calendar-alt text-warning"></span>
+            <h5 class="mb-0">Pautas</h5>
+            <span class="badge bg-warning text-dark ms-auto">{{ pautas.count }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover fs-9 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Título</th>
+                            <th>Período</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pauta in pautas %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'pautas:pauta' pauta.pk %}" class="fw-bold text-warning text-decoration-none">
+                                    {{ pauta.titulo }}
+                                </a>
+                            </td>
+                            <td class="text-body-secondary">
+                                {{ pauta.data_inicio|date:"d/m/Y" }} a {{ pauta.data_final|date:"d/m/Y" }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── BIBLIOTECA ──────────────────────────────────────────── #}
+    {% if documentos %}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <span class="fas fa-book text-success"></span>
+            <h5 class="mb-0">Biblioteca</h5>
+            <span class="badge bg-success ms-auto">{{ documentos.count }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover fs-9 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Título</th>
+                            <th>Categoria</th>
+                            <th>Incluído em</th>
+                            <th class="text-end pe-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documentos %}
+                        <tr>
+                            <td class="ps-3">
+                                <a href="{% url 'biblioteca:detalhe' doc.slug %}" class="fw-bold text-success text-decoration-none">
+                                    {{ doc.titulo }}
+                                </a>
+                            </td>
+                            <td class="text-body-secondary">{{ doc.categoria.nome }}</td>
+                            <td class="text-body-tertiary">{{ doc.data_inclusao|date:"d/m/Y" }}</td>
+                            <td class="text-end pe-3">
+                                {% if doc.lido %}
+                                <span class="badge bg-success">Lido</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Pendente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── MPPF ────────────────────────────────────────────────── #}
+    {% if triagens %}
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center gap-2">
+            <span class="fas fa-filter text-info"></span>
+            <h5 class="mb-0">Triagem MPPF</h5>
+            <span class="badge bg-info text-dark ms-auto">{{ triagens.count }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover fs-9 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-end pe-3">Processo</th>
+                            <th>Resultado</th>
+                            <th>Qtd. Recursos</th>
+                            <th class="text-end pe-3">Responsável</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in triagens %}
+                        <tr>
+                            <td class="text-end pe-3">
+                                {% if t.processo.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}
+                                <a href="{% url 'mppf:realizar_triagem' t.pk %}" class="fw-bold text-info text-decoration-none">
+                                    {{ t.processo.fase_completa }} - {{ t.processo.numero }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if t.resultado %}
+                                <span class="badge bg-{{ t.resultado.cor_classe }}">{{ t.resultado.nome }}</span>
+                                {% else %}
+                                <span class="text-body-tertiary">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-body-secondary">{{ t.quantidade_de_recursos|default:"—" }}</td>
+                            <td class="text-end pe-3 text-body-secondary">{{ t.processo.responsavel.nome_completo|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}{# fim total > 0 #}
+</div>
+{% endblock %}

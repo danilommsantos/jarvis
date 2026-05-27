@@ -12,6 +12,7 @@ def incluir_triagem():
         responsavel__nome_completo='Danilo Monteiro De Melo Santos',
         movimentacao_interna__nome='(GE) Triagem Geral',
         triagem_mppf__isnull=True,
+        impedido=False,
     ).annotate(
         qtd_recursos=Count('partes_autoras') # <-- Atributo padronizado
     ).order_by('qtd_recursos')
@@ -25,6 +26,7 @@ def triagem():
         movimentacao_interna__nome='(GE) Triagem Geral',
         esta_no_acervo=True,
         triagem_mppf__isnull=False,        
+        impedido=False,
     ).annotate(
         qtd_recursos=Coalesce(F('triagem_mppf__quantidade_de_recursos'), Value(1))
     )

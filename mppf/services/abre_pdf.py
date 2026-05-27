@@ -41,6 +41,7 @@ def registrar_pdf_anotado(pdf_path):
 
 
 def pagina_da_DA(caminho):
+    _t = time.perf_counter()
     with open(caminho, 'rb') as file:
         pdf_reader = PyPDF2.PdfReader(file)
         pag_DA = 1
@@ -55,7 +56,8 @@ def pagina_da_DA(caminho):
             for decisao in decisoes_de_admissibilidade:
                 if pdf_reader.get_destination_page_number(decisao) + 1 > pag_DA:
                     pag_DA = pdf_reader.get_destination_page_number(decisao) + 1
-                    break      
+                    break
+    print(f'[TEMPO] pagina_da_DA: {time.perf_counter() - _t:.2f}s')
     return pag_DA
 
 
@@ -102,28 +104,31 @@ def maximiza_aba():
 
 
 def encontrar_marcadores(pdf_path, expressoes):
+    _t = time.perf_counter()
     doc = fitz.open(pdf_path)
     marcadores = doc.get_toc(simple=True)
     total_paginas = doc.page_count # Necessário para caso o marcador seja o último
     resultados = []
-    
+
     for i, marcador in enumerate(marcadores):
         titulo, pagina = marcador[1], marcador[2]
         for expressao in expressoes:
             if expressao in titulo:
                 # Ajuste de índice (TOC retorna base 1, PyMuPDF exige base 0)
-                pag_inicial = pagina - 1 
+                pag_inicial = pagina - 1
                 # Evita erro de tipo "None" no range() se for o último marcador
                 proxima_pagina = marcadores[i + 1][2] - 1 if i + 1 < len(marcadores) else total_paginas
                 resultados.append((pag_inicial, proxima_pagina))
                 break
     doc.close()
+    print(f'[TEMPO] encontrar_marcadores: {time.perf_counter() - _t:.2f}s')
     return resultados
 
 
 def destaca_texto_pdf(pdf_path):
+    _t0 = time.perf_counter()
     print('destaca_texto_pdf')
-    
+
     # 1. Verifica no TXT primeiro (mais rápido que abrir o PDF)
     # anotados = carregar_pdfs_anotados()
     pdf = str(pdf_path).replace("D:/Processos/", "")
@@ -137,27 +142,34 @@ def destaca_texto_pdf(pdf_path):
     # if not foi_pdf_destacado(pdf_path=pdf_path):
     if True:
         pecas = encontrar_marcadores(pdf_path=pdf_path, expressoes=[
-            "- Decisão (Decisão Recurso de Revista)", 
-            "- Acórdão -", 
-            "Acórdão TRT", 
+            "- Decisão (Decisão Recurso de Revista)",
+            # "- Acórdão -",
+            # "Acórdão TRT",
             "Despacho de Admissibilidade",
             ])
         print(len(pecas))
-        print(pecas)               
+        print(pecas)
+
+        _t = time.perf_counter()
         doc = fitz.open(pdf_path)
-        expressoes = ExpressaoMateria.objects.annotate(
-                tamanho=Length('texto')
-            ).order_by('-tamanho')
-        # print(expressoes)
-        
+        print(f'[TEMPO] destaca_texto_pdf — fitz.open: {time.perf_counter() - _t:.2f}s')
+
+        _t = time.perf_counter()
+        expressoes = list(ExpressaoMateria.objects.annotate(tamanho=Length('texto')).order_by('-tamanho'))
+        print(f'[TEMPO] destaca_texto_pdf — query ExpressaoMateria ({len(expressoes)} expressões): {time.perf_counter() - _t:.2f}s')
+
         for peca in pecas:
             pagina_inicial, pagina_final = peca
+            n_paginas = pagina_final - pagina_inicial
+            print(f'[TEMPO] destaca_texto_pdf — processando peça páginas {pagina_inicial}–{pagina_final} ({n_paginas} páginas)...')
+            _t_peca = time.perf_counter()
             for numero_pagina in tqdm(range(pagina_inicial, pagina_final)):
+                _t_pag = time.perf_counter()
                 pagina = doc[numero_pagina]
-                
+
                 # 1. Extrai o texto puro da página para o Regex analisar
-                texto_pagina = pagina.get_text("text") 
-                
+                texto_pagina = pagina.get_text("text")
+
                 for expressao in expressoes:
                     # 1. Verifica se a expressão do banco já é um Regex pronto
                     if expressao.usar_regex:
@@ -170,19 +182,19 @@ def destaca_texto_pdf(pdf_path):
                         inicio = r"\b" if re.match(r'\w', expressao.texto[0]) else r""
                         fim = r"\b" if re.search(r'\w$', expressao.texto) else r""
                         padrao_regex = inicio + padrao_base + fim
-                    
+
                     # Usamos um set para evitar buscar a mesma string duas vezes na mesma página
                     textos_para_destacar = set()
-                    
+
                     # 2. O Regex procura no texto da página e pesca a string com a formatação REAL do PDF
                     for match in re.finditer(padrao_regex, texto_pagina, flags=re.IGNORECASE):
                         texto_normalizado = re.sub(r'\s+', ' ', match.group()).strip()
                         textos_para_destacar.add(texto_normalizado)
-                    
+
                     # 3. Agora passamos a string literal encontrada para o search_for do PyMuPDF
                     for texto_exato in textos_para_destacar:
                         text_instances = pagina.search_for(texto_exato, flags=fitz.TEXT_DEHYPHENATE)
-                        
+
                         for inst in text_instances:
                             highlight = pagina.add_highlight_annot(inst)
                             # cor_sem_hash = expressao.assunto.cor.replace('#', '')
@@ -190,11 +202,18 @@ def destaca_texto_pdf(pdf_path):
                             color_rgb = tuple(int(cor_sem_hash[i:i + 2], 16) / 255 for i in (0, 2, 4))
                             highlight.set_colors(stroke=color_rgb)
                             highlight.update()
-        
+                elapsed_pag = time.perf_counter() - _t_pag
+                if elapsed_pag > 0.5:
+                    print(f'[TEMPO]   página {numero_pagina}: {elapsed_pag:.2f}s (lenta)')
+            print(f'[TEMPO] destaca_texto_pdf — peça concluída: {time.perf_counter() - _t_peca:.2f}s')
+
+        _t = time.perf_counter()
         doc.saveIncr()
-        doc.close()        
+        doc.close()
+        print(f'[TEMPO] destaca_texto_pdf — saveIncr: {time.perf_counter() - _t:.2f}s')
+
         marcar_como_destacado(pdf_path=pdf_path)
-        
+
         # 3. Adiciona ao arquivo TXT após o sucesso
         registrar_pdf_anotado(pdf)
         print(f'PDF destacado e adicionado ao registro: {pdf_path}')
@@ -202,6 +221,8 @@ def destaca_texto_pdf(pdf_path):
         # Se estava destacado nos metadados mas não no TXT, atualizamos o TXT para sincronizar
         registrar_pdf_anotado(pdf_path)
         print(f'{pdf_path} já foi destacado (via metadado). Sincronizado com o txt.')
+
+    print(f'[TEMPO] destaca_texto_pdf — TOTAL: {time.perf_counter() - _t0:.2f}s')
 
             
 def foi_pdf_destacado(pdf_path):
@@ -228,14 +249,19 @@ def marcar_como_destacado(pdf_path):
 
 
 def negritar_marcadores(pdf):
+    _t0 = time.perf_counter()
     expressions = ExpressaoMarcador.objects.all()
+
     try:
+        _t = time.perf_counter()
         with open(pdf, "rb") as f:
             reader = PdfReader(f)
             writer = PdfWriter()
 
+            _t_pages = time.perf_counter()
             for page in reader.pages:
                 writer.add_page(page)
+            print(f'[TEMPO] negritar_marcadores — copiar páginas ({len(reader.pages)} págs): {time.perf_counter() - _t_pages:.2f}s')
 
             def process_bookmarks(bookmarks, parent=None):
                 for bm in tqdm(bookmarks):
@@ -251,15 +277,23 @@ def negritar_marcadores(pdf):
                         except Exception as e:
                             print(f"Erro no marcador '{title}' em {pdf}: {e}")
 
+            _t_bm = time.perf_counter()
             if reader.outline:
                 process_bookmarks(reader.outline)
+            print(f'[TEMPO] negritar_marcadores — processar marcadores: {time.perf_counter() - _t_bm:.2f}s')
 
+        print(f'[TEMPO] negritar_marcadores — leitura total: {time.perf_counter() - _t:.2f}s')
+
+        _t = time.perf_counter()
         with open(pdf, "wb") as output_file:
             writer.write(output_file)
+        print(f'[TEMPO] negritar_marcadores — escrita do PDF: {time.perf_counter() - _t:.2f}s')
 
     except Exception as e:
         print(f"Erro crítico no arquivo {pdf}: {e}")
         raise e
+
+    print(f'[TEMPO] negritar_marcadores — TOTAL: {time.perf_counter() - _t0:.2f}s')
 
 
 def fechar_documento_pdfxchange():
@@ -408,16 +442,27 @@ def abre_pdf_na_pagina(caminho, pagina):
 
 
 def abre_pdf_do_processo(processo, pasta_processos):
+    _t0 = time.perf_counter()
     print(processo.numero)
     caminho = pdf_mais_recente(diretorio=pasta_processos, expressao=processo.numero)
     print(caminho)
     if esta_aberta_a_janela(titulo_da_janela=f'{processo.numero} - PDF-XChange Viewer') or esta_aberta_a_janela(titulo_da_janela=f'{processo.numero}* - PDF-XChange Viewer'):
         print('O arquivo já está aberto.')
     elif existe_o_arquivo(caminho):
+        _t = time.perf_counter()
         negritar_marcadores(pdf=caminho)
+        print(f'[TEMPO] abre_pdf_do_processo — negritar_marcadores: {time.perf_counter() - _t:.2f}s')
+
+        _t = time.perf_counter()
         destaca_texto_pdf(pdf_path=caminho)
+        print(f'[TEMPO] abre_pdf_do_processo — destaca_texto_pdf: {time.perf_counter() - _t:.2f}s')
+
+        _t = time.perf_counter()
         pagina = pagina_da_DA(caminho=caminho)
+        print(f'[TEMPO] abre_pdf_do_processo — pagina_da_DA: {time.perf_counter() - _t:.2f}s')
+
         print(f'Abrindo na página {pagina}...')
         abre_pdf_na_pagina(caminho=caminho, pagina=pagina)
+        print(f'[TEMPO] abre_pdf_do_processo — TOTAL: {time.perf_counter() - _t0:.2f}s')
     else:
         print(processo.numero, 'não existe em', pasta_processos)

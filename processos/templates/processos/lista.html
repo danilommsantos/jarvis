@@ -25,7 +25,7 @@
             <table class="table table-sm fs-9 mb-0">
                 <thead>
                     <tr>
-                        <th class="sort border-top ps-3" data-sort="numero">Número</th>
+                        <th class="sort border-top text-end pe-3" data-sort="numero">Número</th>
                         <th class="sort border-top" data-sort="responsavel">Responsável</th>
                         <th class="sort border-top text-end pe-3" data-sort="data">Entrada</th>
                     </tr>
@@ -33,7 +33,9 @@
                 <tbody class="list">
                     {% for p in processos %}
                     <tr class="align-middle">
-                        <td class="numero ps-3 fw-bold text-primary">{{ p.fase_completa}} - {{ p.numero }}</td>
+                        <td class="numero text-end pe-3 fw-bold text-primary">
+                            {% if p.impedido %}<span class="badge bg-danger me-1">IMPEDIMENTO</span>{% endif %}{{ p.fase_completa }} - {{ p.numero }}
+                        </td>
                         <td class="responsavel text-body-emphasis">
                             {{ p.responsavel.nome_completo|default:"Não atribuído" }}
                         </td>
